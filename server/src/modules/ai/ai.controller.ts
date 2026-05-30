@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { asyncHandler } from '../../utils/asyncHandler.js';
-import { handleChat } from './ai.service.js';
+import { handleChat, handleChatStream } from './ai.service.js';
 
 const chatSchema = z.object({
   message: z.string().min(1, 'Vui lòng nhập câu hỏi.').max(2000),
@@ -22,4 +22,25 @@ export const chat = asyncHandler(async (req: Request, res: Response) => {
   const input = chatSchema.parse(req.body);
   const result = await handleChat(input);
   res.json(result);
+});
+
+// POST /api/ai/chat/stream — trả về câu trả lời theo dòng (Server-Sent Events).
+export const chatStream = asyncHandler(async (req: Request, res: Response) => {
+  const input = chatSchema.parse(req.body);
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders?.();
+
+  try {
+    for await (const token of handleChatStream(input)) {
+      res.write(`data: ${JSON.stringify({ token })}\n\n`);
+    }
+    res.write('data: [DONE]\n\n');
+  } catch {
+    res.write(`data: ${JSON.stringify({ error: 'Trợ lý AI gặp sự cố. Vui lòng thử lại.' })}\n\n`);
+  } finally {
+    res.end();
+  }
 });

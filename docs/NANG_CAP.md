@@ -3,8 +3,8 @@
 ## Nhóm A — Ấn tượng
 - [x] 1. Dark mode (chế độ tối)
 - [x] 2. Chứng chỉ hoàn thành khoá học
-- [ ] 3. Streaming câu trả lời AI
-- [ ] 4. Bảng xếp hạng (Leaderboard)
+- [x] 3. Streaming câu trả lời AI
+- [x] 4. Bảng xếp hạng (Leaderboard)
 
 ## Nhóm B — Chiều sâu kỹ thuật
 - [ ] 5. Vector embeddings cho AI (pgvector)

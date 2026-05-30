@@ -1,4 +1,5 @@
 import { chatCompletion, type ChatMessage } from '../../services/groq.js';
+import { streamChatCompletion } from '../../services/groqStream.js';
 import { prisma } from '../../db/prisma.js';
 import {
   buildContext,
@@ -35,6 +36,51 @@ export interface AiChatResult {
   reply: string;
   outOfScope: boolean;
   sources: { title: string; courseTitle: string }[];
+}
+
+// Chuẩn bị messages cho Groq (RAG + system prompt + lịch sử). Dùng chung cho
+// cả chế độ thường lẫn streaming. Trả về null nếu câu hỏi ngoài phạm vi.
+async function prepareMessages(
+  params: AiChatParams,
+): Promise<{ messages: ChatMessage[]; sources: { title: string; courseTitle: string }[] } | null> {
+  const { message, lessonId, history = [] } = params;
+
+  const retrieved = await retrieveRelevantLessons(message, 3);
+  if (retrieved.length === 0 && !looksInScope(message)) {
+    return null; // ngoài phạm vi
+  }
+
+  let extraContext = '';
+  if (lessonId) {
+    const lesson = await prisma.lesson.findUnique({
+      where: { id: lessonId },
+      select: { title: true, contentMarkdown: true, course: { select: { title: true } } },
+    });
+    if (lesson) {
+      extraContext = `[Bài học đang xem: ${lesson.course.title} - ${lesson.title}]\n${lesson.contentMarkdown.slice(0, 1500)}\n\n`;
+    }
+  }
+
+  const context = extraContext + buildContext(retrieved);
+  const messages: ChatMessage[] = [
+    { role: 'system', content: buildSystemPrompt(context) },
+    ...history.slice(-6).map((m) => ({ role: m.role, content: m.content })),
+    { role: 'user', content: message },
+  ];
+
+  return { messages, sources: retrieved.map((l) => ({ title: l.title, courseTitle: l.courseTitle })) };
+}
+
+// Phiên bản streaming: yield từng token. Nếu ngoài phạm vi, yield câu từ chối.
+export async function* handleChatStream(params: AiChatParams): AsyncGenerator<string> {
+  const prepared = await prepareMessages(params);
+  if (!prepared) {
+    yield OUT_OF_SCOPE_REPLY;
+    return;
+  }
+  for await (const token of streamChatCompletion(prepared.messages)) {
+    yield token;
+  }
 }
 
 // Xử lý một lượt chat: RAG + guardrail + gọi Groq.

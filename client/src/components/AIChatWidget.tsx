@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
-import { sendChat, type ChatHistoryItem } from '@/lib/aiApi';
+import { sendChatStream, type ChatHistoryItem } from '@/lib/aiApi';
 import { getErrorMessage } from '@/lib/api';
 
 interface Message extends ChatHistoryItem {
@@ -34,11 +34,14 @@ export default function AIChatWidget() {
         role: m.role,
         content: m.content,
       }));
-      const res = await sendChat(text, { lessonId, history });
-      setMessages((prev) => [
-        ...prev,
-        { id: Date.now() + 1, role: 'assistant', content: res.reply },
-      ]);
+      // Tạo sẵn tin nhắn assistant rỗng rồi nối token dần (hiệu ứng gõ chữ).
+      const assistantId = Date.now() + 1;
+      setMessages((prev) => [...prev, { id: assistantId, role: 'assistant', content: '' }]);
+      await sendChatStream(text, { lessonId, history }, (token) => {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === assistantId ? { ...m, content: m.content + token } : m)),
+        );
+      });
     } catch (err) {
       setError(getErrorMessage(err, 'Trợ lý AI gặp sự cố. Vui lòng thử lại.'));
     } finally {

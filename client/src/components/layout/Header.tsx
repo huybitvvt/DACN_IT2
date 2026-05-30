@@ -7,6 +7,7 @@ const navItems = [
   { to: '/', label: 'Trang chủ', end: true },
   { to: '/courses', label: 'Khoá học' },
   { to: '/dashboard', label: 'Tiến độ' },
+  { to: '/leaderboard', label: 'Xếp hạng' },
 ];
 
 export default function Header() {

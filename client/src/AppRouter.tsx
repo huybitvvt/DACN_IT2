@@ -11,6 +11,7 @@ import LessonPage from '@/pages/LessonPage';
 import QuizPage from '@/pages/QuizPage';
 import SearchPage from '@/pages/SearchPage';
 import DashboardPage from '@/pages/DashboardPage';
+import LeaderboardPage from '@/pages/LeaderboardPage';
 import RoadmapPage from '@/pages/RoadmapPage';
 import CertificatePage from '@/pages/CertificatePage';
 import NotFoundPage from '@/pages/NotFoundPage';
@@ -44,6 +45,7 @@ const router = createBrowserRouter([
       { path: 'lessons/:id/quiz', element: <QuizPage /> },
       { path: 'exercises/:id', element: <Lazy><ExercisePage /></Lazy> },
       { path: 'search', element: <SearchPage /> },
+      { path: 'leaderboard', element: <LeaderboardPage /> },
       { path: 'login', element: <LoginPage /> },
       { path: 'register', element: <RegisterPage /> },
       {
