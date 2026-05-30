@@ -2,21 +2,17 @@ import type { Request, Response } from 'express';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { prisma } from '../../db/prisma.js';
 
-// GET /api/leaderboard — top người học theo số mục hoàn thành + streak.
+// GET /api/leaderboard — top tài khoản theo số mục hoàn thành + streak.
 export const getLeaderboard = asyncHandler(async (_req: Request, res: Response) => {
-  // Lấy người dùng LEARNER kèm số item đã hoàn thành và số huy hiệu.
+  // Lấy mọi tài khoản có hoạt động. Admin vẫn có thể học thử khi demo nên cũng
+  // được xếp hạng nếu có tiến độ/streak/huy hiệu.
   const users = await prisma.user.findMany({
-    where: { role: 'LEARNER' },
     select: {
       id: true,
       displayName: true,
       streakCount: true,
-      _count: {
-        select: {
-          progress: true,
-          badges: true,
-        },
-      },
+      progress: { where: { completed: true }, select: { id: true } },
+      badges: { select: { id: true } },
     },
   });
 
@@ -24,10 +20,10 @@ export const getLeaderboard = asyncHandler(async (_req: Request, res: Response) 
   const ranked = users
     .map((u) => ({
       displayName: u.displayName,
-      completed: u._count.progress,
-      badges: u._count.badges,
+      completed: u.progress.length,
+      badges: u.badges.length,
       streak: u.streakCount,
-      score: u._count.progress * 10 + u.streakCount * 5 + u._count.badges * 20,
+      score: u.progress.length * 10 + u.streakCount * 5 + u.badges.length * 20,
     }))
     .filter((u) => u.score > 0)
     .sort((a, b) => b.score - a.score)
