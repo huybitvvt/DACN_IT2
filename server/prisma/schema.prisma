@@ -1,0 +1,263 @@
+// Prisma schema cho Website hỗ trợ học lập trình.
+// Tham chiếu ERD trong .kiro/specs/learn-programming-platform/design.md
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Role {
+  LEARNER
+  ADMIN
+}
+
+enum SubmissionStatus {
+  PASSED
+  FAILED
+  ERROR
+}
+
+enum QuestionType {
+  SINGLE
+  MULTI
+}
+
+enum ProgressItemType {
+  LESSON
+  EXERCISE
+  QUIZ
+}
+
+// Ngôn ngữ được hỗ trợ trên nền tảng.
+enum ProgrammingLanguage {
+  SQL
+  C
+  CPP
+  PYTHON
+}
+
+// ---------------------------------------------------------------------------
+// Người dùng & gamification
+// ---------------------------------------------------------------------------
+
+model User {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  displayName    String
+  passwordHash   String
+  role           Role      @default(LEARNER)
+  streakCount    Int       @default(0)
+  lastActiveDate DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  submissions  Submission[]
+  quizAttempts QuizAttempt[]
+  progress     Progress[]
+  badges       UserBadge[]
+
+  @@index([email])
+}
+
+model Badge {
+  id          String      @id @default(cuid())
+  code        String      @unique
+  title       String
+  description String
+  users       UserBadge[]
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  badgeId   String
+  awardedAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Nội dung học liệu
+// ---------------------------------------------------------------------------
+
+model Course {
+  id          String              @id @default(cuid())
+  slug        String              @unique
+  title       String
+  language    ProgrammingLanguage
+  description String
+  order       Int                 @default(0)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  lessons  Lesson[]
+  progress Progress[]
+}
+
+model Lesson {
+  id              String   @id @default(cuid())
+  courseId        String
+  title           String
+  contentMarkdown String
+  order           Int      @default(0)
+  isPublic        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  course    Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  examples  Example[]
+  exercises Exercise[]
+  quiz      Quiz?
+
+  @@index([courseId, order])
+}
+
+model Example {
+  id       String              @id @default(cuid())
+  lessonId String
+  language ProgrammingLanguage
+  code     String
+  order    Int                 @default(0)
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId])
+}
+
+// ---------------------------------------------------------------------------
+// Bài tập & chấm điểm
+// ---------------------------------------------------------------------------
+
+model Exercise {
+  id             String              @id @default(cuid())
+  lessonId       String
+  title          String
+  promptMarkdown String
+  language       ProgrammingLanguage
+  starterCode    String              @default("")
+  order          Int                 @default(0)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  lesson      Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  testCases   TestCase[]
+  submissions Submission[]
+
+  @@index([lessonId])
+}
+
+model TestCase {
+  id             String  @id @default(cuid())
+  exerciseId     String
+  input          String  @default("")
+  expectedOutput String
+  isHidden       Boolean @default(false)
+  order          Int     @default(0)
+
+  exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@index([exerciseId])
+}
+
+model Submission {
+  id          String           @id @default(cuid())
+  userId      String
+  exerciseId  String
+  sourceCode  String
+  passedCount Int              @default(0)
+  totalCount  Int              @default(0)
+  status      SubmissionStatus @default(FAILED)
+  createdAt   DateTime         @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@index([userId, exerciseId])
+}
+
+// ---------------------------------------------------------------------------
+// Quiz
+// ---------------------------------------------------------------------------
+
+model Quiz {
+  id        String   @id @default(cuid())
+  lessonId  String   @unique
+  title     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lesson    Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  questions Question[]
+  attempts  QuizAttempt[]
+}
+
+model Question {
+  id     String       @id @default(cuid())
+  quizId String
+  text   String
+  type   QuestionType @default(SINGLE)
+  order  Int          @default(0)
+
+  quiz    Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  choices Choice[]
+
+  @@index([quizId])
+}
+
+model Choice {
+  id         String  @id @default(cuid())
+  questionId String
+  text       String
+  isCorrect  Boolean @default(false)
+  order      Int     @default(0)
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+}
+
+model QuizAttempt {
+  id        String   @id @default(cuid())
+  userId    String
+  quizId    String
+  score     Int
+  total     Int
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([userId, quizId])
+}
+
+// ---------------------------------------------------------------------------
+// Tiến độ học tập
+// ---------------------------------------------------------------------------
+
+model Progress {
+  id          String           @id @default(cuid())
+  userId      String
+  courseId    String
+  itemType    ProgressItemType
+  itemId      String
+  completed   Boolean          @default(false)
+  completedAt DateTime?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, itemType, itemId])
+  @@index([userId, courseId])
+}

@@ -1,0 +1,58 @@
+@import 'highlight.js/styles/github.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Định dạng nội dung bài học render từ Markdown */
+.lesson-content h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 1.25rem 0 0.75rem;
+}
+.lesson-content h2 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: 1.1rem 0 0.6rem;
+}
+.lesson-content h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 1rem 0 0.5rem;
+}
+.lesson-content p {
+  margin: 0.6rem 0;
+  line-height: 1.7;
+}
+.lesson-content ul,
+.lesson-content ol {
+  margin: 0.6rem 0;
+  padding-left: 1.5rem;
+  list-style: revert;
+}
+.lesson-content code {
+  background: #f3f4f6;
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.25rem;
+  font-size: 0.9em;
+}
+.lesson-content .hljs-pre {
+  background: #f6f8fa;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  overflow-x: auto;
+  margin: 0.75rem 0;
+}
+.lesson-content .hljs-pre code {
+  background: transparent;
+  padding: 0;
+}
