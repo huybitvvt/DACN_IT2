@@ -12,9 +12,9 @@
 - [x] 7. Editor nâng cao
 
 ## Nhóm C — Trải nghiệm
-- [ ] 8. Ghi chú & đánh dấu bài học (bookmark)
-- [ ] 9. Bình luận/hỏi đáp dưới bài học
-- [ ] 10. Tìm kiếm nâng cao (highlight từ khoá)
+- [x] 8. Ghi chú & đánh dấu bài học (bookmark)
+- [x] 9. Bình luận/hỏi đáp dưới bài học
+- [x] 10. Tìm kiếm nâng cao (highlight từ khoá)
 
 ---
 

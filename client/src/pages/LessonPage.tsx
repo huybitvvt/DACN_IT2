@@ -7,6 +7,8 @@ import Spinner from '@/components/ui/Spinner';
 import Alert from '@/components/ui/Alert';
 import ExampleBlock from '@/components/ExampleBlock';
 import LessonSidebar from '@/components/LessonSidebar';
+import LessonNotePanel from '@/components/LessonNotePanel';
+import LessonComments from '@/components/LessonComments';
 
 export default function LessonPage() {
   const { id } = useParams<{ id: string }>();
@@ -127,8 +129,14 @@ export default function LessonPage() {
           </section>
         )}
 
+        {/* Ghi chú cá nhân + bookmark */}
+        <LessonNotePanel lessonId={lesson.id} />
+
+        {/* Thảo luận */}
+        <LessonComments lessonId={lesson.id} />
+
         {/* Điều hướng dưới */}
-        <div className="mt-10 pt-6 border-t border-gray-200">
+        <div className="mt-10 pt-6 border-t border-gray-200 dark:border-gray-700">
           <NavButtons lesson={lesson} />
         </div>
       </article>

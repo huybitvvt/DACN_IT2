@@ -63,6 +63,8 @@ model User {
   quizAttempts QuizAttempt[]
   progress     Progress[]
   badges       UserBadge[]
+  notes        LessonNote[]
+  comments     Comment[]
 
   @@index([email])
 }
@@ -121,6 +123,8 @@ model Lesson {
   examples  Example[]
   exercises Exercise[]
   quiz      Quiz?
+  notes     LessonNote[]
+  comments  Comment[]
 
   @@index([courseId, order])
 }
@@ -261,4 +265,35 @@ model Progress {
 
   @@unique([userId, itemType, itemId])
   @@index([userId, courseId])
+}
+
+// Ghi chú & đánh dấu bài học của người dùng (#8).
+model LessonNote {
+  id         String   @id @default(cuid())
+  userId     String
+  lessonId   String
+  content    String   @default("")
+  bookmarked Boolean  @default(false)
+  updatedAt  DateTime @updatedAt
+  createdAt  DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([userId])
+}
+
+// Bình luận/hỏi đáp dưới bài học (#9).
+model Comment {
+  id        String   @id @default(cuid())
+  userId    String
+  lessonId  String
+  content   String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId, createdAt])
 }

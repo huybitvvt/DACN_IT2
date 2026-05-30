@@ -11,6 +11,7 @@ import aiRouter from '../modules/ai/ai.routes.js';
 import adminRouter from '../modules/admin/admin.routes.js';
 import certificateRouter from '../modules/certificate/certificate.routes.js';
 import leaderboardRouter from '../modules/leaderboard/leaderboard.routes.js';
+import engagementRouter from '../modules/engagement/engagement.routes.js';
 
 // Router gốc cho toàn bộ API.
 const apiRouter = Router();
@@ -26,6 +27,7 @@ apiRouter.use(gamificationRouter);
 apiRouter.use(aiRouter);
 apiRouter.use(certificateRouter);
 apiRouter.use(leaderboardRouter);
+apiRouter.use(engagementRouter);
 apiRouter.use('/admin', adminRouter);
 
 export default apiRouter;
