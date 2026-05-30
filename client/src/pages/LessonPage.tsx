@@ -6,118 +6,164 @@ import { renderMarkdown } from '@/lib/markdown';
 import Spinner from '@/components/ui/Spinner';
 import Alert from '@/components/ui/Alert';
 import ExampleBlock from '@/components/ExampleBlock';
+import LessonSidebar from '@/components/LessonSidebar';
 
 export default function LessonPage() {
   const { id } = useParams<{ id: string }>();
   const [lesson, setLesson] = useState<LessonDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
     setLoading(true);
     setError('');
+    window.scrollTo({ top: 0 });
     fetchLesson(id)
       .then(setLesson)
       .catch((err) => setError(getErrorMessage(err)))
       .finally(() => setLoading(false));
   }, [id]);
 
-  const html = useMemo(
-    () => (lesson ? renderMarkdown(lesson.contentMarkdown) : ''),
-    [lesson],
-  );
+  const html = useMemo(() => (lesson ? renderMarkdown(lesson.contentMarkdown) : ''), [lesson]);
 
   if (loading) return <Spinner />;
   if (error) return <Alert type="error">{error}</Alert>;
   if (!lesson) return null;
 
   return (
-    <article className="max-w-3xl mx-auto space-y-6">
-      <nav className="text-sm text-gray-500">
-        <Link to="/courses" className="hover:underline">
-          Khoá học
-        </Link>{' '}
-        /{' '}
-        <Link to={`/courses/${lesson.course.slug}`} className="hover:underline">
-          {lesson.course.title}
-        </Link>{' '}
-        / <span className="text-gray-700">{lesson.title}</span>
-      </nav>
+    <div className="lg:grid lg:grid-cols-[240px_1fr] lg:gap-8 -mt-2">
+      {/* Sidebar bài học (W3Schools style) */}
+      <aside className="hidden lg:block">
+        <div className="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto bg-white rounded-xl border border-gray-200 py-2">
+          <LessonSidebar courseSlug={lesson.course.slug} currentLessonId={lesson.id} />
+        </div>
+      </aside>
 
-      <h1 className="text-3xl font-bold text-gray-900">{lesson.title}</h1>
-
-      {/* Nội dung lý thuyết (đã sanitize chống XSS) */}
-      <div
-        className="lesson-content text-gray-800"
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
-
-      {/* Ví dụ code có thể chạy thử */}
-      {lesson.examples.length > 0 && (
-        <section className="space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900">Ví dụ — Thử ngay</h2>
-          {lesson.examples.map((ex) => (
-            <ExampleBlock key={ex.id} language={ex.language} code={ex.code} />
-          ))}
-        </section>
+      {/* Nút mở danh sách bài (mobile) */}
+      <button
+        onClick={() => setSidebarOpen((v) => !v)}
+        className="lg:hidden mb-3 text-sm px-3 py-2 rounded-lg border border-gray-300 bg-white"
+      >
+        ☰ Danh sách bài học
+      </button>
+      {sidebarOpen && (
+        <div className="lg:hidden mb-4 bg-white rounded-xl border border-gray-200 py-2">
+          <LessonSidebar
+            courseSlug={lesson.course.slug}
+            currentLessonId={lesson.id}
+            onNavigate={() => setSidebarOpen(false)}
+          />
+        </div>
       )}
 
-      {/* Bài tập của bài học */}
-      {lesson.exercises.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="text-xl font-semibold text-gray-900">Bài tập</h2>
-          <ul className="space-y-2">
-            {lesson.exercises.map((ex) => (
-              <li key={ex.id}>
-                <Link
-                  to={`/exercises/${ex.id}`}
-                  className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:border-brand-400"
-                >
-                  <span className="text-gray-800">{ex.title}</span>
-                  <span className="text-sm text-brand-700">Làm bài →</span>
-                </Link>
-              </li>
+      <article className="min-w-0 max-w-3xl animate-fade-in">
+        <nav className="text-sm text-gray-500 mb-3">
+          <Link to="/courses" className="hover:text-brand-600">
+            Khoá học
+          </Link>{' '}
+          /{' '}
+          <Link to={`/courses/${lesson.course.slug}`} className="hover:text-brand-600">
+            {lesson.course.title}
+          </Link>{' '}
+          / <span className="text-gray-700">{lesson.title}</span>
+        </nav>
+
+        <h1 className="text-3xl font-extrabold text-gray-900 mb-4">{lesson.title}</h1>
+
+        {/* Nút điều hướng trên (W3Schools đặt Next/Prev cả trên lẫn dưới) */}
+        <NavButtons lesson={lesson} />
+
+        {/* Nội dung lý thuyết */}
+        <div
+          className="lesson-content text-gray-800 mt-6"
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+
+        {/* Ví dụ code */}
+        {lesson.examples.length > 0 && (
+          <section className="space-y-4 mt-8">
+            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+              <span className="text-accent-500">▶</span> Ví dụ — Thử ngay
+            </h2>
+            {lesson.examples.map((ex) => (
+              <ExampleBlock key={ex.id} language={ex.language} code={ex.code} />
             ))}
-          </ul>
-        </section>
-      )}
-
-      {/* Quiz nếu có */}
-      {lesson.quiz && (
-        <section>
-          <Link
-            to={`/lessons/${lesson.id}/quiz`}
-            className="inline-block px-4 py-2 rounded-lg bg-amber-500 text-white text-sm font-medium hover:bg-amber-600"
-          >
-            Làm quiz kiểm tra →
-          </Link>
-        </section>
-      )}
-
-      {/* Điều hướng trước/sau */}
-      <nav className="flex items-center justify-between pt-6 border-t border-gray-200">
-        {lesson.prev ? (
-          <Link
-            to={`/lessons/${lesson.prev.id}`}
-            className="text-brand-700 hover:underline text-sm"
-          >
-            ← {lesson.prev.title}
-          </Link>
-        ) : (
-          <span />
+          </section>
         )}
-        {lesson.next ? (
-          <Link
-            to={`/lessons/${lesson.next.id}`}
-            className="text-brand-700 hover:underline text-sm text-right"
-          >
-            {lesson.next.title} →
-          </Link>
-        ) : (
-          <span />
+
+        {/* Bài tập */}
+        {lesson.exercises.length > 0 && (
+          <section className="space-y-2 mt-8">
+            <h2 className="text-xl font-bold text-gray-900">📝 Bài tập</h2>
+            <ul className="space-y-2">
+              {lesson.exercises.map((ex) => (
+                <li key={ex.id}>
+                  <Link
+                    to={`/exercises/${ex.id}`}
+                    className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-200 hover:border-brand-400 hover:shadow-card transition group"
+                  >
+                    <span className="text-gray-800 font-medium">{ex.title}</span>
+                    <span className="text-sm text-brand-600 font-semibold group-hover:translate-x-1 transition-transform">
+                      Làm bài →
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
-      </nav>
-    </article>
+
+        {/* Quiz */}
+        {lesson.quiz && (
+          <section className="mt-8">
+            <Link
+              to={`/lessons/${lesson.id}/quiz`}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-accent-500 text-ink-900 font-bold hover:bg-accent-600 transition"
+            >
+              🎯 Làm quiz kiểm tra
+            </Link>
+          </section>
+        )}
+
+        {/* Điều hướng dưới */}
+        <div className="mt-10 pt-6 border-t border-gray-200">
+          <NavButtons lesson={lesson} />
+        </div>
+      </article>
+    </div>
+  );
+}
+
+// Cụm nút Previous / Next kiểu W3Schools.
+function NavButtons({ lesson }: { lesson: LessonDetail }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      {lesson.prev ? (
+        <Link
+          to={`/lessons/${lesson.prev.id}`}
+          className="px-4 py-2 rounded-lg bg-brand-500 text-white text-sm font-semibold hover:bg-brand-600 transition"
+        >
+          ❮ Trước
+        </Link>
+      ) : (
+        <span className="px-4 py-2 rounded-lg bg-gray-200 text-gray-400 text-sm font-semibold cursor-not-allowed">
+          ❮ Trước
+        </span>
+      )}
+      {lesson.next ? (
+        <Link
+          to={`/lessons/${lesson.next.id}`}
+          className="px-4 py-2 rounded-lg bg-brand-500 text-white text-sm font-semibold hover:bg-brand-600 transition"
+        >
+          Tiếp ❯
+        </Link>
+      ) : (
+        <span className="px-4 py-2 rounded-lg bg-gray-200 text-gray-400 text-sm font-semibold cursor-not-allowed">
+          Tiếp ❯
+        </span>
+      )}
+    </div>
   );
 }

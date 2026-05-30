@@ -12,38 +12,32 @@ export default function Header() {
   const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const linkClass = ({ isActive }: { isActive: boolean }) =>
+    `px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+      isActive ? 'bg-brand-500 text-white' : 'text-gray-200 hover:bg-white/10 hover:text-white'
+    }`;
+
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
+    <header className="bg-ink-900 sticky top-0 z-40 shadow-md">
       <div className="mx-auto max-w-6xl px-4 h-14 flex items-center justify-between">
-        <Link to="/" className="font-bold text-brand-700 text-lg">
-          Học Lập Trình
+        <Link to="/" className="flex items-center gap-2 font-extrabold text-white text-lg">
+          <span className="inline-flex items-center justify-center w-8 h-8 rounded-md bg-brand-500 text-white">
+            {'</>'}
+          </span>
+          <span>
+            Code<span className="text-brand-400">Learn</span>
+          </span>
         </Link>
 
         {/* Điều hướng desktop */}
         <nav className="hidden md:flex items-center gap-1" aria-label="Điều hướng chính">
           {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) =>
-                `px-3 py-1.5 rounded text-sm font-medium ${
-                  isActive ? 'bg-brand-50 text-brand-700' : 'text-gray-600 hover:text-brand-700'
-                }`
-              }
-            >
+            <NavLink key={item.to} to={item.to} end={item.end} className={linkClass}>
               {item.label}
             </NavLink>
           ))}
           {user?.role === 'ADMIN' && (
-            <NavLink
-              to="/admin"
-              className={({ isActive }) =>
-                `px-3 py-1.5 rounded text-sm font-medium ${
-                  isActive ? 'bg-brand-50 text-brand-700' : 'text-gray-600 hover:text-brand-700'
-                }`
-              }
-            >
+            <NavLink to="/admin" className={linkClass}>
               Quản trị
             </NavLink>
           )}
@@ -52,22 +46,27 @@ export default function Header() {
         <div className="hidden md:flex items-center gap-2">
           {user ? (
             <>
-              <span className="text-sm text-gray-600">Xin chào, {user.displayName}</span>
+              <span className="text-sm text-gray-300">
+                Xin chào, <strong className="text-white">{user.displayName}</strong>
+              </span>
               <button
                 onClick={() => void logout()}
-                className="text-sm px-3 py-1.5 rounded border border-gray-300 hover:bg-gray-50"
+                className="text-sm px-3 py-1.5 rounded-md border border-white/20 text-gray-200 hover:bg-white/10"
               >
                 Đăng xuất
               </button>
             </>
           ) : (
             <>
-              <Link to="/login" className="text-sm px-3 py-1.5 text-gray-600 hover:text-brand-700">
+              <Link
+                to="/login"
+                className="text-sm px-3 py-1.5 rounded-md text-gray-200 hover:bg-white/10"
+              >
                 Đăng nhập
               </Link>
               <Link
                 to="/register"
-                className="text-sm px-3 py-1.5 rounded bg-brand-600 text-white hover:bg-brand-700"
+                className="text-sm px-4 py-1.5 rounded-md bg-brand-500 text-white font-semibold hover:bg-brand-400 transition-colors"
               >
                 Đăng ký
               </Link>
@@ -77,7 +76,7 @@ export default function Header() {
 
         {/* Nút menu mobile */}
         <button
-          className="md:hidden p-2 text-gray-600"
+          className="md:hidden p-2 text-gray-200"
           onClick={() => setMenuOpen((v) => !v)}
           aria-label="Mở menu"
           aria-expanded={menuOpen}
@@ -90,14 +89,17 @@ export default function Header() {
 
       {/* Menu mobile */}
       {menuOpen && (
-        <nav className="md:hidden border-t border-gray-200 px-4 py-2 space-y-1" aria-label="Điều hướng di động">
+        <nav
+          className="md:hidden border-t border-white/10 px-4 py-2 space-y-1 bg-ink-900"
+          aria-label="Điều hướng di động"
+        >
           {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.end}
               onClick={() => setMenuOpen(false)}
-              className="block px-3 py-2 rounded text-sm text-gray-700 hover:bg-gray-50"
+              className="block px-3 py-2 rounded text-sm text-gray-200 hover:bg-white/10"
             >
               {item.label}
             </NavLink>
@@ -106,19 +108,19 @@ export default function Header() {
             <NavLink
               to="/admin"
               onClick={() => setMenuOpen(false)}
-              className="block px-3 py-2 rounded text-sm text-gray-700 hover:bg-gray-50"
+              className="block px-3 py-2 rounded text-sm text-gray-200 hover:bg-white/10"
             >
               Quản trị
             </NavLink>
           )}
-          <div className="pt-2 border-t border-gray-100">
+          <div className="pt-2 border-t border-white/10">
             {user ? (
               <button
                 onClick={() => {
                   setMenuOpen(false);
                   void logout();
                 }}
-                className="block w-full text-left px-3 py-2 rounded text-sm text-gray-700 hover:bg-gray-50"
+                className="block w-full text-left px-3 py-2 rounded text-sm text-gray-200 hover:bg-white/10"
               >
                 Đăng xuất
               </button>
@@ -127,14 +129,14 @@ export default function Header() {
                 <Link
                   to="/login"
                   onClick={() => setMenuOpen(false)}
-                  className="block px-3 py-2 rounded text-sm text-gray-700 hover:bg-gray-50"
+                  className="block px-3 py-2 rounded text-sm text-gray-200 hover:bg-white/10"
                 >
                   Đăng nhập
                 </Link>
                 <Link
                   to="/register"
                   onClick={() => setMenuOpen(false)}
-                  className="block px-3 py-2 rounded text-sm text-brand-700 font-medium hover:bg-gray-50"
+                  className="block px-3 py-2 rounded text-sm text-brand-400 font-semibold hover:bg-white/10"
                 >
                   Đăng ký
                 </Link>
