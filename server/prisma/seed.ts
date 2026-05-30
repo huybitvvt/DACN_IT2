@@ -125,6 +125,24 @@ async function seedCourses() {
 
 async function main() {
   console.log('[seed] Bắt đầu nạp dữ liệu mẫu...');
+
+  // An toàn khi deploy: nếu đã có dữ liệu thì bỏ qua, tránh xoá tiến độ người dùng
+  // ở các lần deploy lại. Đặt SEED_FORCE=true để buộc nạp lại từ đầu.
+  const force = process.env.SEED_FORCE === 'true';
+  const existing = await prisma.course.count();
+  if (existing > 0 && !force) {
+    console.log(`[seed] Đã có ${existing} khoá học -> bỏ qua seed (đặt SEED_FORCE=true để nạp lại).`);
+    // Vẫn đảm bảo có embedding cho bài học chưa có (an toàn, không xoá gì).
+    try {
+      const { backfillLessonEmbeddings } = await import('../src/modules/ai/embedding.service.js');
+      const n = await backfillLessonEmbeddings();
+      if (n > 0) console.log(`[seed] Đã bổ sung embedding cho ${n} bài học.`);
+    } catch {
+      /* bỏ qua */
+    }
+    return;
+  }
+
   await clearContent();
   await seedBadges();
   await seedAdmin();

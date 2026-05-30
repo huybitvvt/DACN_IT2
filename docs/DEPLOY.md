@@ -29,8 +29,13 @@ Render hỗ trợ Node + PostgreSQL miễn phí, **không cần thẻ tín dụn
 1. **New +** → **Web Service** → chọn repo `DACN_IT2`
 2. Cấu hình:
    - **Runtime:** Node
-   - **Build Command:** `npm install && npm run build`
+   - **Build Command:** `npm install && npm run build && npm run prisma:deploy --workspace server && npm run seed --workspace server`
    - **Start Command:** `npm run start --workspace server`
+
+   > **Vì sao gộp migrate + seed vào Build Command?** Gói Free của Render **không có Shell/SSH**
+   > nên không chạy lệnh thủ công được. Vì vậy ta đưa luôn vào bước build. Script seed đã được
+   > làm **idempotent** (nếu đã có dữ liệu thì tự bỏ qua), nên chạy lại ở mỗi lần deploy
+   > **không xoá** tiến độ người dùng. (Muốn nạp lại từ đầu: đặt biến `SEED_FORCE=true`.)
 3. Thêm **Environment Variables** (tab Environment):
 
 | Key | Value |
@@ -46,19 +51,19 @@ Render hỗ trợ Node + PostgreSQL miễn phí, **không cần thẻ tín dụn
 
 4. **Create Web Service**. Render sẽ build (lần đầu ~5-10 phút).
 
-### Bước 4 — Tạo bảng & nạp dữ liệu (chạy 1 lần)
+### Bước 4 — Hoàn tất
 
-Sau khi deploy xong, mở tab **Shell** của web service trên Render và chạy:
+Migration và seed đã chạy tự động trong Build Command (xem Bước 3), nên sau khi deploy
+xong là website đã có sẵn 4 khoá học + tài khoản admin.
 
-```bash
-npm run prisma:deploy --workspace server   # tạo bảng
-npm run seed --workspace server            # nạp 4 khoá học + admin
-```
+> Nếu bạn dùng **gói trả phí** (có Shell), có thể bỏ migrate+seed khỏi Build Command và chạy
+> thủ công trong tab **Shell**:
+> ```bash
+> npm run prisma:deploy --workspace server
+> npm run seed --workspace server
+> ```
 
-> Hoặc dùng file `render.yaml` có sẵn trong repo (Blueprint) để Render tự cấu hình:
-> **New +** → **Blueprint** → chọn repo. Khi đó migration chạy tự động ở `preDeployCommand`.
-
-### Bước 5 — Hoàn tất
+### Bước 5 — Mở website
 
 - Mở URL Render cấp (vd `https://codelearn.onrender.com`)
 - Đăng nhập admin: `admin@lpp.local` / `admin12345`

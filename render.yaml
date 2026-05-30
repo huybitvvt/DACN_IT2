@@ -5,10 +5,8 @@ services:
     name: codelearn
     runtime: node
     plan: free
-    # Cài deps, build cả client + server (Prisma generate chạy ở postinstall)
-    buildCommand: npm install && npm run build
-    # Áp dụng migration rồi nạp dữ liệu mẫu, sau đó chạy server
-    preDeployCommand: npm run prisma:deploy --workspace server
+    # Cài deps, build client + server, chạy migration + seed (idempotent)
+    buildCommand: npm install && npm run build && npm run prisma:deploy --workspace server && npm run seed --workspace server
     startCommand: npm run start --workspace server
     envVars:
       - key: NODE_ENV
