@@ -6,7 +6,7 @@ import AIChatWidget from '@/components/AIChatWidget';
 // Layout chung: header cố định, nội dung ở giữa, footer dưới cùng.
 export default function Layout() {
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-ink-900 transition-colors">
       {/* Liên kết bỏ qua điều hướng cho người dùng bàn phím/đọc màn hình */}
       <a
         href="#main-content"

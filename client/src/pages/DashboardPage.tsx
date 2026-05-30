@@ -34,21 +34,21 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Xin chào, {user?.displayName}</h1>
-        <p className="text-gray-600">Theo dõi tiến độ học tập của bạn.</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Xin chào, {user?.displayName}</h1>
+        <p className="text-gray-600 dark:text-gray-400">Theo dõi tiến độ học tập của bạn.</p>
       </div>
 
       {/* Gamification: streak + huy hiệu */}
       {gamification && (
         <section className="grid gap-4 sm:grid-cols-2">
-          <div className="bg-white p-5 rounded-lg border border-gray-200">
-            <p className="text-sm text-gray-500">Chuỗi ngày học</p>
-            <p className="text-3xl font-bold text-brand-700 mt-1">
+          <div className="bg-white dark:bg-ink-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700">
+            <p className="text-sm text-gray-500 dark:text-gray-400">Chuỗi ngày học</p>
+            <p className="text-3xl font-bold text-brand-600 dark:text-brand-400 mt-1">
               🔥 {gamification.streakCount} ngày
             </p>
           </div>
-          <div className="bg-white p-5 rounded-lg border border-gray-200">
-            <p className="text-sm text-gray-500 mb-2">Huy hiệu đã đạt</p>
+          <div className="bg-white dark:bg-ink-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Huy hiệu đã đạt</p>
             {gamification.badges.length === 0 ? (
               <p className="text-gray-400 text-sm">Chưa có huy hiệu nào. Hãy bắt đầu học!</p>
             ) : (
@@ -70,19 +70,27 @@ export default function DashboardPage() {
 
       {/* Tiến độ theo khoá */}
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-gray-900">Tiến độ theo khoá học</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Tiến độ theo khoá học</h2>
         <div className="space-y-4">
           {progress.courses.map((c) => (
-            <div key={c.courseId} className="bg-white p-4 rounded-lg border border-gray-200">
+            <div key={c.courseId} className="bg-white dark:bg-ink-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between mb-2">
-                <Link to={`/roadmap/${c.slug}`} className="font-medium text-brand-700 hover:underline">
+                <Link to={`/roadmap/${c.slug}`} className="font-medium text-brand-600 dark:text-brand-400 hover:underline">
                   {c.title}
                 </Link>
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-gray-500 dark:text-gray-400">
                   {c.completed}/{c.total} mục
                 </span>
               </div>
               <ProgressBar percent={c.percent} />
+              {c.percent === 100 && (
+                <Link
+                  to={`/certificate/${c.slug}`}
+                  className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-accent-600 hover:underline"
+                >
+                  🏆 Nhận chứng chỉ hoàn thành
+                </Link>
+              )}
             </div>
           ))}
         </div>

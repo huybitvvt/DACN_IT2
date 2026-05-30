@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const navItems = [
   { to: '/', label: 'Trang chủ', end: true },
@@ -44,6 +45,7 @@ export default function Header() {
         </nav>
 
         <div className="hidden md:flex items-center gap-2">
+          <ThemeToggle />
           {user ? (
             <>
               <span className="text-sm text-gray-300">

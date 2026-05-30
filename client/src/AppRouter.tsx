@@ -12,6 +12,7 @@ import QuizPage from '@/pages/QuizPage';
 import SearchPage from '@/pages/SearchPage';
 import DashboardPage from '@/pages/DashboardPage';
 import RoadmapPage from '@/pages/RoadmapPage';
+import CertificatePage from '@/pages/CertificatePage';
 import NotFoundPage from '@/pages/NotFoundPage';
 
 // Trang dùng CodeMirror được tải động để không phình bundle chính.
@@ -58,6 +59,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <RoadmapPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'certificate/:slug',
+        element: (
+          <ProtectedRoute>
+            <CertificatePage />
           </ProtectedRoute>
         ),
       },

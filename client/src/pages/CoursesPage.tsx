@@ -23,7 +23,7 @@ export default function CoursesPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h1 className="text-2xl font-bold text-gray-900">Khoá học</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Khoá học</h1>
         <SearchBar />
       </div>
 
@@ -32,17 +32,18 @@ export default function CoursesPage() {
 
       {!loading && !error && (
         <div className="grid gap-4 sm:grid-cols-2">
-          {courses.map((course) => (
+          {courses.map((course, i) => (
             <Link
               key={course.id}
               to={`/courses/${course.slug}`}
-              className="block p-5 bg-white rounded-lg border border-gray-200 hover:border-brand-400 hover:shadow-sm transition"
+              style={{ animationDelay: `${i * 60}ms` }}
+              className="block p-5 bg-white dark:bg-ink-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-brand-400 hover:shadow-cardHover hover:-translate-y-0.5 transition-all animate-fade-in-up"
             >
               <div className="flex items-center justify-between">
-                <h2 className="font-bold text-gray-900">{course.title}</h2>
+                <h2 className="font-bold text-gray-900 dark:text-gray-100">{course.title}</h2>
                 <LanguageBadge language={course.language} />
               </div>
-              <p className="mt-2 text-sm text-gray-600">{course.description}</p>
+              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{course.description}</p>
             </Link>
           ))}
         </div>

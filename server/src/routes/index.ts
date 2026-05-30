@@ -9,6 +9,7 @@ import progressRouter from '../modules/progress/progress.routes.js';
 import gamificationRouter from '../modules/gamification/gamification.routes.js';
 import aiRouter from '../modules/ai/ai.routes.js';
 import adminRouter from '../modules/admin/admin.routes.js';
+import certificateRouter from '../modules/certificate/certificate.routes.js';
 
 // Router gốc cho toàn bộ API.
 const apiRouter = Router();
@@ -22,6 +23,7 @@ apiRouter.use(quizRouter);
 apiRouter.use(progressRouter);
 apiRouter.use(gamificationRouter);
 apiRouter.use(aiRouter);
+apiRouter.use(certificateRouter);
 apiRouter.use('/admin', adminRouter);
 
 export default apiRouter;

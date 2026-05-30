@@ -36,7 +36,7 @@ export default function LessonPage() {
     <div className="lg:grid lg:grid-cols-[240px_1fr] lg:gap-8 -mt-2">
       {/* Sidebar bài học (W3Schools style) */}
       <aside className="hidden lg:block">
-        <div className="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto bg-white rounded-xl border border-gray-200 py-2">
+        <div className="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto bg-white dark:bg-ink-800 rounded-xl border border-gray-200 dark:border-gray-700 py-2">
           <LessonSidebar courseSlug={lesson.course.slug} currentLessonId={lesson.id} />
         </div>
       </aside>
@@ -44,12 +44,12 @@ export default function LessonPage() {
       {/* Nút mở danh sách bài (mobile) */}
       <button
         onClick={() => setSidebarOpen((v) => !v)}
-        className="lg:hidden mb-3 text-sm px-3 py-2 rounded-lg border border-gray-300 bg-white"
+        className="lg:hidden mb-3 text-sm px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-ink-800 text-gray-700 dark:text-gray-200"
       >
         ☰ Danh sách bài học
       </button>
       {sidebarOpen && (
-        <div className="lg:hidden mb-4 bg-white rounded-xl border border-gray-200 py-2">
+        <div className="lg:hidden mb-4 bg-white dark:bg-ink-800 rounded-xl border border-gray-200 dark:border-gray-700 py-2">
           <LessonSidebar
             courseSlug={lesson.course.slug}
             currentLessonId={lesson.id}
@@ -59,7 +59,7 @@ export default function LessonPage() {
       )}
 
       <article className="min-w-0 max-w-3xl animate-fade-in">
-        <nav className="text-sm text-gray-500 mb-3">
+        <nav className="text-sm text-gray-500 dark:text-gray-400 mb-3">
           <Link to="/courses" className="hover:text-brand-600">
             Khoá học
           </Link>{' '}
@@ -67,10 +67,10 @@ export default function LessonPage() {
           <Link to={`/courses/${lesson.course.slug}`} className="hover:text-brand-600">
             {lesson.course.title}
           </Link>{' '}
-          / <span className="text-gray-700">{lesson.title}</span>
+          / <span className="text-gray-700 dark:text-gray-300">{lesson.title}</span>
         </nav>
 
-        <h1 className="text-3xl font-extrabold text-gray-900 mb-4">{lesson.title}</h1>
+        <h1 className="text-3xl font-extrabold text-gray-900 dark:text-gray-100 mb-4">{lesson.title}</h1>
 
         {/* Nút điều hướng trên (W3Schools đặt Next/Prev cả trên lẫn dưới) */}
         <NavButtons lesson={lesson} />
@@ -84,7 +84,7 @@ export default function LessonPage() {
         {/* Ví dụ code */}
         {lesson.examples.length > 0 && (
           <section className="space-y-4 mt-8">
-            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
               <span className="text-accent-500">▶</span> Ví dụ — Thử ngay
             </h2>
             {lesson.examples.map((ex) => (
@@ -96,15 +96,15 @@ export default function LessonPage() {
         {/* Bài tập */}
         {lesson.exercises.length > 0 && (
           <section className="space-y-2 mt-8">
-            <h2 className="text-xl font-bold text-gray-900">📝 Bài tập</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">📝 Bài tập</h2>
             <ul className="space-y-2">
               {lesson.exercises.map((ex) => (
                 <li key={ex.id}>
                   <Link
                     to={`/exercises/${ex.id}`}
-                    className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-200 hover:border-brand-400 hover:shadow-card transition group"
+                    className="flex items-center justify-between p-4 bg-white dark:bg-ink-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-brand-400 hover:shadow-card transition group"
                   >
-                    <span className="text-gray-800 font-medium">{ex.title}</span>
+                    <span className="text-gray-800 dark:text-gray-200 font-medium">{ex.title}</span>
                     <span className="text-sm text-brand-600 font-semibold group-hover:translate-x-1 transition-transform">
                       Làm bài →
                     </span>

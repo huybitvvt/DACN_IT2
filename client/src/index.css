@@ -8,10 +8,20 @@
   color-scheme: light;
 }
 
+html.dark {
+  color-scheme: dark;
+}
+
 body {
   margin: 0;
   font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Nền tối cho toàn trang khi bật dark mode */
+html.dark body {
+  background-color: #15171c;
+  color: #e5e7eb;
 }
 
 /* Thanh cuộn mảnh, hiện đại */
@@ -112,4 +122,64 @@ body {
   color: #e6edf3;
   padding: 0;
   font-size: 0.92em;
+}
+
+/* ===== Dark mode overrides cho nội dung bài học ===== */
+html.dark .lesson-content {
+  color: #d1d5db;
+}
+html.dark .lesson-content h1,
+html.dark .lesson-content h2,
+html.dark .lesson-content h3,
+html.dark .lesson-content strong {
+  color: #f3f4f6;
+}
+html.dark .lesson-content h2 {
+  border-bottom-color: #374151;
+}
+html.dark .lesson-content a {
+  color: #34c77b;
+}
+html.dark .lesson-content blockquote {
+  background: #04281c;
+  color: #a7e9c4;
+}
+html.dark .lesson-content code {
+  background: #3a2f00;
+  color: #ffd866;
+}
+html.dark .lesson-content th,
+html.dark .lesson-content td {
+  border-color: #374151;
+}
+html.dark .lesson-content tr:nth-child(even) {
+  background: #1f2128;
+}
+
+/* Tiện ích nền/màu chữ thích ứng dark mode dùng lại nhiều nơi */
+.surface {
+  @apply bg-white dark:bg-ink-800 border border-gray-200 dark:border-gray-700;
+}
+.text-body {
+  @apply text-gray-800 dark:text-gray-200;
+}
+.text-muted {
+  @apply text-gray-500 dark:text-gray-400;
+}
+
+/* ===== In chứng chỉ: chỉ hiện khung chứng chỉ ===== */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #certificate,
+  #certificate * {
+    visibility: visible;
+  }
+  #certificate {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
 }

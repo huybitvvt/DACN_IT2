@@ -20,7 +20,7 @@ export default function LessonSidebar({ courseSlug, currentLessonId, onNavigate 
 
   return (
     <nav aria-label="Danh sách bài học" className="text-sm">
-      <div className="px-3 py-2 font-bold text-gray-900 uppercase text-xs tracking-wide">
+      <div className="px-3 py-2 font-bold text-gray-900 dark:text-gray-100 uppercase text-xs tracking-wide">
         {course.title}
       </div>
       <ul>
@@ -32,8 +32,8 @@ export default function LessonSidebar({ courseSlug, currentLessonId, onNavigate 
               className={() =>
                 `block px-3 py-2 border-l-4 transition-colors ${
                   lesson.id === currentLessonId
-                    ? 'border-brand-500 bg-brand-50 text-brand-700 font-semibold'
-                    : 'border-transparent text-gray-700 hover:bg-gray-100 hover:border-gray-300'
+                    ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 font-semibold'
+                    : 'border-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 hover:border-gray-300'
                 }`
               }
             >
