@@ -13,6 +13,8 @@
     "build:client": "npm run build --workspace client",
     "build:server": "npm run build --workspace server",
     "build": "npm run build:server && npm run build:client",
+    "start": "npm run start --workspace server",
+    "deploy:migrate": "npm run prisma:deploy --workspace server && npm run seed --workspace server",
     "lint": "npm run lint --workspaces --if-present",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "test": "npm run test --workspaces --if-present"

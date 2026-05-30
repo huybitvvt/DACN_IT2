@@ -31,6 +31,10 @@ export const env = {
   groqApiKey: optional('GROQ_API_KEY'),
   groqModel: optional('GROQ_MODEL', 'llama-3.3-70b-versatile'),
 
+  // Đặt 'true' nếu deploy frontend và backend ở 2 domain khác nhau
+  // (cookie cần SameSite=None; Secure để gửi cross-site).
+  crossSiteCookie: optional('CROSS_SITE_COOKIE', 'false') === 'true',
+
   // Trình chạy code C/C++ qua Wandbox (miễn phí, không cần key).
   wandboxUrl: optional('WANDBOX_URL', 'https://wandbox.org'),
 

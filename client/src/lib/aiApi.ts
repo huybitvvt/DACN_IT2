@@ -34,7 +34,8 @@ export async function sendChatStream(
   options: { lessonId?: string; history?: ChatHistoryItem[] } = {},
   onToken?: (token: string) => void,
 ): Promise<void> {
-  const res = await fetch('/api/ai/chat/stream', {
+  const base = (import.meta.env.VITE_API_URL ?? '/api') as string;
+  const res = await fetch(`${base}/ai/chat/stream`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',

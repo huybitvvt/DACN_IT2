@@ -2,6 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import fs from 'node:fs';
 import { env } from './config/env.js';
 import { generalLimiter } from './middleware/rateLimit.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
@@ -43,6 +46,18 @@ export function createApp() {
 
   // Gắn router API
   app.use('/api', apiRouter);
+
+  // ===== Phục vụ frontend đã build (deploy 1 service, cùng domain) =====
+  // Khi build client, output nằm ở client/dist. Nếu thư mục tồn tại thì phục vụ
+  // file tĩnh + trả index.html cho mọi route không phải /api (SPA fallback).
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const clientDist = path.resolve(__dirname, '../../client/dist');
+  if (fs.existsSync(clientDist)) {
+    app.use(express.static(clientDist));
+    app.get(/^(?!\/api).*/, (_req, res) => {
+      res.sendFile(path.join(clientDist, 'index.html'));
+    });
+  }
 
   // 404 cho route không khớp + xử lý lỗi tập trung (đặt cuối cùng).
   app.use(notFoundHandler);

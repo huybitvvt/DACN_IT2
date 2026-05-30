@@ -28,10 +28,13 @@ export const AUTH_COOKIE = 'lpp_token';
 // Tuỳ chọn cookie thống nhất cho set/clear.
 export function authCookieOptions() {
   const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+  // Khi deploy tách domain: SameSite=None + Secure để cookie gửi cross-site.
+  // Khi cùng domain (hoặc dev): SameSite=Lax.
+  const crossSite = env.crossSiteCookie;
   return {
     httpOnly: true,
-    secure: env.isProduction,
-    sameSite: 'lax' as const,
+    secure: env.isProduction || crossSite,
+    sameSite: (crossSite ? 'none' : 'lax') as 'none' | 'lax',
     maxAge: sevenDaysMs,
     path: '/',
   };

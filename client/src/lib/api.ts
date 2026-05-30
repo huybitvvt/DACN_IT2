@@ -1,9 +1,11 @@
 import axios, { AxiosError } from 'axios';
 
-// Client gọi API dùng chung. baseURL '/api' được Vite proxy chuyển tới backend
-// trong môi trường dev (xem vite.config.ts).
+// Client gọi API dùng chung.
+// - Mặc định baseURL '/api' (dev dùng Vite proxy; production dùng chung domain
+//   khi Express phục vụ luôn frontend).
+// - Nếu deploy tách domain, đặt biến VITE_API_URL=https://api-cua-ban.com/api
 export const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_URL ?? '/api',
   withCredentials: true, // gửi kèm cookie phiên (JWT HttpOnly)
   headers: { 'Content-Type': 'application/json' },
 });

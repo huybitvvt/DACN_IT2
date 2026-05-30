@@ -164,6 +164,10 @@ Bộ test gồm 45 unit/integration test (Vitest + Supertest) phủ các bất b
 - Liên kết "Bỏ qua tới nội dung chính" cho người dùng bàn phím/đọc màn hình.
 - HTML ngữ nghĩa (`header`, `nav`, `main`, `footer`), nhãn `label`, `aria-*`, `role` phù hợp.
 
+## Deploy online
+
+Xem hướng dẫn chi tiết trong `docs/DEPLOY.md`. Tóm tắt: deploy **1 web service** (Express phục vụ cả API lẫn giao diện đã build, cùng domain) + 1 PostgreSQL trên **Render.com** (miễn phí, không cần thẻ). Repo có sẵn `render.yaml` để dùng tính năng Blueprint.
+
 ## Ghi chú về dịch vụ chạy code
 
 Ban đầu dự kiến dùng Judge0 (qua RapidAPI) nhưng gói free yêu cầu thẻ tín dụng, nên đã chuyển sang **Wandbox** (mã nguồn mở, miễn phí, không cần khoá). Backend là lớp trung gian nên có thể đổi sang dịch vụ khác mà không ảnh hưởng phần còn lại.
