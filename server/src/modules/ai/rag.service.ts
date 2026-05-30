@@ -1,4 +1,5 @@
 import { prisma } from '../../db/prisma.js';
+import { semanticSearch } from './embedding.service.js';
 
 export interface RetrievedLesson {
   id: string;
@@ -21,15 +22,38 @@ function buildTsQuery(question: string): string {
   return [...new Set(tokens)].map((t) => t.replace(/'/g, "''")).join(' | ');
 }
 
-// Truy xuất top-k bài học liên quan tới câu hỏi bằng full-text search.
+// Truy xuất top-k bài học liên quan tới câu hỏi.
+// Ưu tiên tìm kiếm ngữ nghĩa (vector embeddings); nếu lỗi/không có kết quả thì
+// fallback về full-text search của PostgreSQL.
 export async function retrieveRelevantLessons(
   question: string,
   k = 3,
 ): Promise<RetrievedLesson[]> {
+  // 1) Thử semantic search bằng embeddings.
+  try {
+    const hits = await semanticSearch(question, k);
+    if (hits.length > 0) {
+      return hits.map((h) => ({
+        id: h.id,
+        title: h.title,
+        courseTitle: h.courseTitle,
+        contentMarkdown: h.contentMarkdown,
+        rank: h.score,
+      }));
+    }
+  } catch (err) {
+    console.warn('[RAG] semantic search lỗi, fallback full-text:', err);
+  }
+
+  // 2) Fallback: full-text search.
+  return fullTextSearch(question, k);
+}
+
+// Full-text search bằng PostgreSQL tsvector/tsquery.
+async function fullTextSearch(question: string, k: number): Promise<RetrievedLesson[]> {
   const tsquery = buildTsQuery(question);
   if (!tsquery) return [];
 
-  // Tìm theo tiêu đề + nội dung; xếp hạng bằng ts_rank.
   const rows = await prisma.$queryRawUnsafe<RetrievedLesson[]>(
     `
     SELECT l.id,

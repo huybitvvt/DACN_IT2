@@ -129,6 +129,14 @@ async function main() {
   await seedBadges();
   await seedAdmin();
   await seedCourses();
+  console.log('[seed] Đang tạo embeddings cho bài học (RAG ngữ nghĩa)...');
+  try {
+    const { backfillLessonEmbeddings } = await import('../src/modules/ai/embedding.service.js');
+    const n = await backfillLessonEmbeddings();
+    console.log(`[seed] Đã tạo embedding cho ${n} bài học.`);
+  } catch (e) {
+    console.warn('[seed] Bỏ qua tạo embedding (sẽ tự tạo khi chạy server):', e);
+  }
   console.log('[seed] Hoàn tất.');
 }
 

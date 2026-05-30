@@ -113,6 +113,7 @@ model Lesson {
   contentMarkdown String
   order           Int      @default(0)
   isPublic        Boolean  @default(true)
+  embedding       Json?    // vector embedding (mảng số) cho RAG ngữ nghĩa
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
