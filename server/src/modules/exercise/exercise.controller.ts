@@ -5,6 +5,27 @@ import { prisma } from '../../db/prisma.js';
 import { getExerciseForLearner, gradeSubmission } from './exercise.service.js';
 import { courseIdOfLesson, markCompleted } from '../progress/progress.service.js';
 import { onLearningActivity } from '../gamification/gamification.service.js';
+import { AppError } from '../../utils/AppError.js';
+
+// GET /api/exercises/:id/submissions — lịch sử các lần nộp của người dùng cho bài tập.
+export const getSubmissionHistory = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw AppError.unauthorized();
+  const id = z.string().min(1).parse(req.params.id);
+  const submissions = await prisma.submission.findMany({
+    where: { userId: req.user.sub, exerciseId: id },
+    orderBy: { createdAt: 'desc' },
+    take: 20,
+    select: {
+      id: true,
+      sourceCode: true,
+      passedCount: true,
+      totalCount: true,
+      status: true,
+      createdAt: true,
+    },
+  });
+  res.json({ submissions });
+});
 
 // GET /api/exercises/:id
 export const getExercise = asyncHandler(async (req: Request, res: Response) => {

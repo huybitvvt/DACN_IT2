@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   fetchExercise,
+  fetchSubmissionHistory,
   submitExercise,
   type ExerciseDetail,
+  type SubmissionHistoryItem,
   type SubmitResult,
 } from '@/lib/exerciseApi';
 import { getErrorMessage } from '@/lib/api';
@@ -23,6 +25,8 @@ export default function ExercisePage() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<SubmitResult | null>(null);
+  const [history, setHistory] = useState<SubmissionHistoryItem[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -35,6 +39,12 @@ export default function ExercisePage() {
       .catch((err) => setError(getErrorMessage(err)))
       .finally(() => setLoading(false));
   }, [id]);
+
+  // Tải lịch sử nộp khi đã đăng nhập.
+  useEffect(() => {
+    if (!id || !user) return;
+    fetchSubmissionHistory(id).then(setHistory).catch(() => setHistory([]));
+  }, [id, user, result]);
 
   const promptHtml = useMemo(
     () => (exercise ? renderMarkdown(exercise.promptMarkdown) : ''),
@@ -117,6 +127,55 @@ export default function ExercisePage() {
       {error && <Alert type="error">{error}</Alert>}
 
       {result && <ResultPanel result={result} />}
+
+      {/* Lịch sử bài nộp (chỉ khi đã đăng nhập và có lịch sử) */}
+      {user && history.length > 0 && (
+        <div>
+          <button
+            onClick={() => setShowHistory((v) => !v)}
+            className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:underline"
+          >
+            {showHistory ? '▼' : '▶'} Lịch sử bài nộp ({history.length})
+          </button>
+          {showHistory && (
+            <ul className="mt-2 space-y-2">
+              {history.map((h) => (
+                <li
+                  key={h.id}
+                  className="p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-ink-800 text-sm"
+                >
+                  <div className="flex items-center justify-between">
+                    <span
+                      className={`font-semibold ${
+                        h.status === 'PASSED' ? 'text-green-600' : 'text-red-600'
+                      }`}
+                    >
+                      {h.status === 'PASSED' ? '✓ Đạt' : '✗ Chưa đạt'} ({h.passedCount}/{h.totalCount})
+                    </span>
+                    <span className="text-gray-400 text-xs">
+                      {new Date(h.createdAt).toLocaleString('vi-VN')}
+                    </span>
+                  </div>
+                  <details className="mt-1">
+                    <summary className="cursor-pointer text-brand-600 dark:text-brand-400 text-xs">
+                      Xem code
+                    </summary>
+                    <pre className="mt-1 p-2 bg-gray-900 text-gray-100 rounded text-xs overflow-x-auto whitespace-pre-wrap">
+                      {h.sourceCode}
+                    </pre>
+                    <button
+                      onClick={() => setCode(h.sourceCode)}
+                      className="mt-1 text-xs text-brand-600 dark:text-brand-400 hover:underline"
+                    >
+                      ↺ Nạp lại code này
+                    </button>
+                  </details>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </div>
   );
 }

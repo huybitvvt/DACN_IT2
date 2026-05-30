@@ -8,8 +8,8 @@
 
 ## Nhóm B — Chiều sâu kỹ thuật
 - [ ] 5. Vector embeddings cho AI (pgvector)
-- [ ] 6. Lịch sử bài nộp
-- [ ] 7. Editor nâng cao
+- [x] 6. Lịch sử bài nộp
+- [x] 7. Editor nâng cao
 
 ## Nhóm C — Trải nghiệm
 - [ ] 8. Ghi chú & đánh dấu bài học (bookmark)

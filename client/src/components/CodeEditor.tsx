@@ -2,10 +2,15 @@ import CodeMirror from '@uiw/react-codemirror';
 import { python } from '@codemirror/lang-python';
 import { sql } from '@codemirror/lang-sql';
 import { cpp } from '@codemirror/lang-cpp';
+import { autocompletion } from '@codemirror/autocomplete';
+import { searchKeymap } from '@codemirror/search';
+import { keymap } from '@codemirror/view';
+import { vscodeDark, vscodeLight } from '@uiw/codemirror-theme-vscode';
 import type { Extension } from '@codemirror/state';
 import type { ProgrammingLanguage } from '@/types';
+import { useTheme } from '@/context/ThemeContext';
 
-function extensionsFor(language: ProgrammingLanguage): Extension[] {
+function languageExtensions(language: ProgrammingLanguage): Extension[] {
   switch (language) {
     case 'PYTHON':
       return [python()];
@@ -34,15 +39,33 @@ export default function CodeEditor({
   height = '200px',
   readOnly = false,
 }: CodeEditorProps) {
+  const { theme } = useTheme();
+
+  // Các extension nâng cao: autocomplete, phím tắt tìm kiếm (Ctrl+F).
+  const extensions: Extension[] = [
+    ...languageExtensions(language),
+    autocompletion(),
+    keymap.of(searchKeymap),
+  ];
+
   return (
-    <div className="rounded-lg border border-gray-300 overflow-hidden">
+    <div className="rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
       <CodeMirror
         value={value}
         height={height}
-        extensions={extensionsFor(language)}
+        theme={theme === 'dark' ? vscodeDark : vscodeLight}
+        extensions={extensions}
         onChange={onChange}
         readOnly={readOnly}
-        basicSetup={{ lineNumbers: true, highlightActiveLine: !readOnly }}
+        basicSetup={{
+          lineNumbers: true,
+          highlightActiveLine: !readOnly,
+          bracketMatching: true,
+          closeBrackets: true,
+          autocompletion: true,
+          foldGutter: true,
+          highlightSelectionMatches: true,
+        }}
       />
     </div>
   );
