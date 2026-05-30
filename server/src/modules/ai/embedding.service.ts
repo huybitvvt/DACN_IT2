@@ -1,4 +1,3 @@
-import { pipeline } from '@xenova/transformers';
 import { prisma } from '../../db/prisma.js';
 
 // Tạo embeddings cục bộ bằng Transformers.js (model all-MiniLM-L6-v2, 384 chiều).
@@ -7,8 +6,13 @@ import { prisma } from '../../db/prisma.js';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let embedderPromise: Promise<any> | null = null;
 
+export function isSemanticRagEnabled(): boolean {
+  return process.env.ENABLE_SEMANTIC_RAG === 'true';
+}
+
 async function getEmbedder() {
   if (!embedderPromise) {
+    const { pipeline } = await import('@xenova/transformers');
     // Model đa ngôn ngữ — hỗ trợ tiếng Việt tốt hơn all-MiniLM (vốn thiên tiếng Anh).
     embedderPromise = pipeline(
       'feature-extraction',
@@ -36,6 +40,10 @@ export function cosineSim(a: number[], b: number[]): number {
 
 // Tạo & lưu embedding cho tất cả bài học chưa có (gọi khi seed hoặc lúc khởi động).
 export async function backfillLessonEmbeddings(): Promise<number> {
+  if (!isSemanticRagEnabled()) {
+    return 0;
+  }
+
   const lessons = await prisma.lesson.findMany({
     select: { id: true, title: true, contentMarkdown: true, embedding: true },
   });
@@ -59,6 +67,10 @@ export interface SemanticHit {
 
 // Tìm top-k bài học gần nghĩa nhất với câu hỏi (dùng cosine similarity).
 export async function semanticSearch(question: string, k = 3): Promise<SemanticHit[]> {
+  if (!isSemanticRagEnabled()) {
+    return [];
+  }
+
   const queryVec = await embed(question);
 
   const lessons = await prisma.lesson.findMany({

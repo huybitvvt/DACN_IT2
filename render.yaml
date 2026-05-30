@@ -27,6 +27,8 @@ services:
         sync: false # tự điền khoá Groq trong dashboard
       - key: GROQ_MODEL
         value: llama-3.3-70b-versatile
+      - key: ENABLE_SEMANTIC_RAG
+        value: "false"
       - key: WANDBOX_URL
         value: https://wandbox.org
 

@@ -30,6 +30,7 @@ export const env = {
 
   groqApiKey: optional('GROQ_API_KEY'),
   groqModel: optional('GROQ_MODEL', 'llama-3.3-70b-versatile'),
+  enableSemanticRag: optional('ENABLE_SEMANTIC_RAG', 'false') === 'true',
 
   // Đặt 'true' nếu deploy frontend và backend ở 2 domain khác nhau
   // (cookie cần SameSite=None; Secure để gửi cross-site).

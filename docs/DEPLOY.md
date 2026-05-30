@@ -46,6 +46,7 @@ Render hỗ trợ Node + PostgreSQL miễn phí, **không cần thẻ tín dụn
 | `JWT_EXPIRES_IN` | `7d` |
 | `GROQ_API_KEY` | khoá Groq của bạn |
 | `GROQ_MODEL` | `llama-3.3-70b-versatile` |
+| `ENABLE_SEMANTIC_RAG` | `false` |
 | `WANDBOX_URL` | `https://wandbox.org` |
 | `CLIENT_ORIGIN` | URL service (điền sau khi có, vd `https://codelearn.onrender.com`) |
 
@@ -77,7 +78,8 @@ xong là website đã có sẵn 4 khoá học + tài khoản admin.
   ~30-60 giây để khởi động lại. Bình thường với bản demo. Trước buổi bảo vệ, hãy truy cập
   trước 1-2 phút cho nó "thức dậy".
 - **Trợ lý AI lần đầu tải model embedding (~120MB)** nên câu hỏi AI đầu tiên hơi lâu.
-  Có thể bỏ qua bằng cách để RAG fallback full-text (xem `docs/NANG_CAP.md`).
+  Trên Render Free nên để `ENABLE_SEMANTIC_RAG=false` để dùng RAG full-text nhẹ hơn.
+  Nếu dùng máy/server mạnh hơn, có thể đặt `ENABLE_SEMANTIC_RAG=true`.
 - **Chạy code C/C++** gọi Wandbox (Internet) — Render có Internet nên chạy bình thường.
 - **Bí mật**: không commit `.env`. Mọi khoá điền trực tiếp trong dashboard Render.
 
