@@ -82,11 +82,11 @@ export default function AdminLessons() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Quản lý bài học</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Quản lý bài học</h1>
       {error && <Alert type="error">{error}</Alert>}
 
       <div className="flex items-center gap-2">
-        <label className="text-sm text-gray-600">Khoá học:</label>
+        <label className="text-sm text-gray-600 dark:text-slate-400">Khoá học:</label>
         <select
           className="px-3 py-2 border border-gray-300 rounded text-sm"
           value={courseId}
@@ -100,8 +100,8 @@ export default function AdminLessons() {
         </select>
       </div>
 
-      <div className="bg-white p-4 rounded-lg border border-gray-200 space-y-3">
-        <h2 className="font-semibold">{editingId ? 'Sửa bài học' : 'Thêm bài học'}</h2>
+      <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-gray-200 dark:border-slate-800 shadow-soft space-y-3">
+        <h2 className="font-semibold text-gray-900 dark:text-white">{editingId ? 'Sửa bài học' : 'Thêm bài học'}</h2>
         <input
           className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
           placeholder="Tiêu đề bài học"
@@ -145,7 +145,7 @@ export default function AdminLessons() {
                 setEditingId(null);
                 setForm(emptyForm);
               }}
-              className="px-4 py-2 rounded border border-gray-300 text-sm"
+              className="px-4 py-2 rounded border border-gray-300 dark:border-slate-700 dark:text-slate-200 text-sm"
             >
               Huỷ
             </button>
@@ -157,16 +157,16 @@ export default function AdminLessons() {
         {lessons.map((l) => (
           <li
             key={l.id}
-            className="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200"
+            className="flex items-center justify-between bg-white dark:bg-slate-900 p-3 rounded-lg border border-gray-200 dark:border-slate-800 text-gray-800 dark:text-slate-200"
           >
             <span>
-              {l.title} {!l.isPublic && <em className="text-xs text-gray-400">(ẩn)</em>}
+              {l.title} {!l.isPublic && <em className="text-xs text-gray-400 dark:text-slate-500">(ẩn)</em>}
             </span>
             <span className="space-x-2 text-sm">
-              <button onClick={() => startEdit(l)} className="text-brand-700 hover:underline">
+              <button onClick={() => startEdit(l)} className="text-brand-700 dark:text-brand-400 hover:underline">
                 Sửa
               </button>
-              <button onClick={() => handleDelete(l.id)} className="text-red-600 hover:underline">
+              <button onClick={() => handleDelete(l.id)} className="text-red-600 dark:text-red-400 hover:underline">
                 Xoá
               </button>
             </span>

@@ -22,7 +22,7 @@ export default function SearchBar() {
         onChange={(e) => setQ(e.target.value)}
         placeholder="Tìm bài học..."
         aria-label="Tìm kiếm bài học"
-        className="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+        className="px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
       />
       <button
         type="submit"

@@ -96,7 +96,7 @@ export default function AdminExercises() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Quản lý bài tập</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Quản lý bài tập</h1>
       {error && <Alert type="error">{error}</Alert>}
 
       <div className="flex flex-wrap items-center gap-2">
@@ -124,8 +124,8 @@ export default function AdminExercises() {
         </select>
       </div>
 
-      <div className="bg-white p-4 rounded-lg border border-gray-200 space-y-3">
-        <h2 className="font-semibold">Thêm bài tập</h2>
+      <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-gray-200 dark:border-slate-800 shadow-soft space-y-3">
+        <h2 className="font-semibold text-gray-900 dark:text-white">Thêm bài tập</h2>
         <input
           className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
           placeholder="Tiêu đề"
@@ -160,12 +160,12 @@ export default function AdminExercises() {
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium">Test cases</h3>
+            <h3 className="text-sm font-medium text-gray-900 dark:text-white">Test cases</h3>
             <button
               onClick={() =>
                 setTestCases((prev) => [...prev, { input: '', expectedOutput: '', isHidden: false }])
               }
-              className="text-sm text-brand-700 hover:underline"
+              className="text-sm text-brand-700 dark:text-brand-400 hover:underline"
             >
               + Thêm test case
             </button>
@@ -210,15 +210,15 @@ export default function AdminExercises() {
         {exercises.map((ex) => (
           <li
             key={ex.id}
-            className="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200"
+            className="flex items-center justify-between bg-white dark:bg-slate-900 p-3 rounded-lg border border-gray-200 dark:border-slate-800 text-gray-800 dark:text-slate-200"
           >
             <span>
               {ex.title}{' '}
-              <em className="text-xs text-gray-400">
+              <em className="text-xs text-gray-400 dark:text-slate-500">
                 ({ex.testCases.length} test, {ex.testCases.filter((t) => t.isHidden).length} ẩn)
               </em>
             </span>
-            <button onClick={() => handleDelete(ex.id)} className="text-red-600 hover:underline text-sm">
+            <button onClick={() => handleDelete(ex.id)} className="text-red-600 dark:text-red-400 hover:underline text-sm">
               Xoá
             </button>
           </li>

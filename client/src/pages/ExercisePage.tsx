@@ -73,32 +73,32 @@ export default function ExercisePage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-5">
-      <h1 className="text-2xl font-bold text-gray-900">{exercise.title}</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{exercise.title}</h1>
 
       <div
-        className="lesson-content text-gray-800 bg-white p-4 rounded-lg border border-gray-200"
+        className="lesson-content text-gray-800 dark:text-slate-200 bg-white dark:bg-slate-900 p-4 rounded-xl border border-gray-200 dark:border-slate-800 shadow-soft"
         dangerouslySetInnerHTML={{ __html: promptHtml }}
       />
 
       {exercise.sampleTestCases.length > 0 && (
-        <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <h2 className="text-sm font-semibold text-gray-700 mb-2">Ví dụ test case</h2>
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-gray-200 dark:border-slate-800 shadow-soft">
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">Ví dụ test case</h2>
           <div className="space-y-2">
             {exercise.sampleTestCases.map((tc, i) => (
               <div key={i} className="grid grid-cols-2 gap-2 text-sm font-mono">
                 <div>
-                  <span className="text-gray-500">Input:</span>
-                  <pre className="bg-gray-50 p-2 rounded mt-1 whitespace-pre-wrap">{tc.input || '(trống)'}</pre>
+                  <span className="text-gray-500 dark:text-slate-400">Input:</span>
+                  <pre className="bg-gray-50 dark:bg-slate-800 text-gray-800 dark:text-slate-200 p-2 rounded mt-1 whitespace-pre-wrap">{tc.input || '(trống)'}</pre>
                 </div>
                 <div>
-                  <span className="text-gray-500">Output:</span>
-                  <pre className="bg-gray-50 p-2 rounded mt-1 whitespace-pre-wrap">{tc.expectedOutput}</pre>
+                  <span className="text-gray-500 dark:text-slate-400">Output:</span>
+                  <pre className="bg-gray-50 dark:bg-slate-800 text-gray-800 dark:text-slate-200 p-2 rounded mt-1 whitespace-pre-wrap">{tc.expectedOutput}</pre>
                 </div>
               </div>
             ))}
           </div>
           {exercise.hiddenTestCount > 0 && (
-            <p className="mt-2 text-xs text-gray-500">
+            <p className="mt-2 text-xs text-gray-500 dark:text-slate-400">
               + {exercise.hiddenTestCount} test case ẩn để chấm điểm.
             </p>
           )}
@@ -107,18 +107,18 @@ export default function ExercisePage() {
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-700">Bài làm của bạn</span>
+          <span className="text-sm font-medium text-gray-700 dark:text-slate-300">Bài làm của bạn</span>
           <button
             onClick={handleSubmit}
             disabled={submitting}
-            className="px-4 py-1.5 text-sm rounded bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-60"
+            className="px-4 py-1.5 text-sm rounded-lg bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-60"
           >
             {submitting ? 'Đang chấm...' : 'Nộp bài'}
           </button>
         </div>
         <CodeEditor language={exercise.language} value={code} onChange={setCode} height="260px" />
         {!user && (
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-500 dark:text-slate-400">
             Bạn đang làm với tư cách khách. Đăng nhập để lưu kết quả vào tiến độ.
           </p>
         )}
@@ -217,12 +217,12 @@ function ResultPanel({ result }: { result: SubmitResult }) {
           <button
             onClick={explainError}
             disabled={explaining}
-            className="text-sm px-3 py-1.5 rounded border border-brand-300 text-brand-700 hover:bg-brand-50 disabled:opacity-60"
+            className="text-sm px-3 py-1.5 rounded-lg border border-brand-300 text-brand-700 hover:bg-brand-50 disabled:opacity-60 dark:border-brand-500/40 dark:text-brand-300 dark:hover:bg-brand-500/10"
           >
             {explaining ? 'AI đang phân tích...' : '🤖 Nhờ AI giải thích lỗi'}
           </button>
           {explanation && (
-            <pre className="mt-2 p-3 rounded-lg text-sm whitespace-pre-wrap bg-blue-50 text-blue-900 border border-blue-200">
+            <pre className="mt-2 p-3 rounded-lg text-sm whitespace-pre-wrap bg-blue-50 text-blue-900 border border-blue-200 dark:bg-sky-500/10 dark:text-sky-200 dark:border-sky-500/30">
               {explanation}
             </pre>
           )}
@@ -230,7 +230,7 @@ function ResultPanel({ result }: { result: SubmitResult }) {
       )}
 
       {result.compileError && (
-        <pre className="p-3 rounded-lg text-sm font-mono whitespace-pre-wrap bg-red-50 text-red-700 border border-red-200 overflow-x-auto">
+        <pre className="p-3 rounded-lg text-sm font-mono whitespace-pre-wrap bg-red-50 text-red-700 border border-red-200 dark:bg-red-500/10 dark:text-red-300 dark:border-red-500/30 overflow-x-auto">
           {result.compileError}
         </pre>
       )}
@@ -240,7 +240,9 @@ function ResultPanel({ result }: { result: SubmitResult }) {
           <li
             key={r.index}
             className={`p-3 rounded-lg border text-sm ${
-              r.passed ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+              r.passed
+                ? 'bg-green-50 border-green-200 text-gray-800 dark:bg-emerald-500/10 dark:border-emerald-500/30 dark:text-slate-200'
+                : 'bg-red-50 border-red-200 text-gray-800 dark:bg-red-500/10 dark:border-red-500/30 dark:text-slate-200'
             }`}
           >
             <div className="flex items-center justify-between">
@@ -252,16 +254,16 @@ function ResultPanel({ result }: { result: SubmitResult }) {
             {!r.isHidden && !r.passed && (
               <div className="mt-2 grid sm:grid-cols-3 gap-2 font-mono text-xs">
                 <div>
-                  <span className="text-gray-500">Input</span>
-                  <pre className="bg-white/60 p-1.5 rounded mt-1 whitespace-pre-wrap">{r.input}</pre>
+                  <span className="text-gray-500 dark:text-slate-400">Input</span>
+                  <pre className="bg-white/70 dark:bg-slate-800/70 p-1.5 rounded mt-1 whitespace-pre-wrap">{r.input}</pre>
                 </div>
                 <div>
-                  <span className="text-gray-500">Mong đợi</span>
-                  <pre className="bg-white/60 p-1.5 rounded mt-1 whitespace-pre-wrap">{r.expectedOutput}</pre>
+                  <span className="text-gray-500 dark:text-slate-400">Mong đợi</span>
+                  <pre className="bg-white/70 dark:bg-slate-800/70 p-1.5 rounded mt-1 whitespace-pre-wrap">{r.expectedOutput}</pre>
                 </div>
                 <div>
-                  <span className="text-gray-500">Của bạn</span>
-                  <pre className="bg-white/60 p-1.5 rounded mt-1 whitespace-pre-wrap">{r.actualOutput}</pre>
+                  <span className="text-gray-500 dark:text-slate-400">Của bạn</span>
+                  <pre className="bg-white/70 dark:bg-slate-800/70 p-1.5 rounded mt-1 whitespace-pre-wrap">{r.actualOutput}</pre>
                 </div>
               </div>
             )}

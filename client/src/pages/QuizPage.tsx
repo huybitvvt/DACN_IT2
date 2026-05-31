@@ -67,7 +67,7 @@ export default function QuizPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-5">
-      <h1 className="text-2xl font-bold text-gray-900">{quiz.title}</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{quiz.title}</h1>
 
       {result && (
         <Alert type={result.score === result.total ? 'success' : 'info'}>
@@ -80,12 +80,12 @@ export default function QuizPage() {
         {quiz.questions.map((q, qi) => {
           const correction = correctionMap.get(q.id);
           return (
-            <li key={q.id} className="bg-white p-4 rounded-lg border border-gray-200">
-              <p className="font-medium text-gray-900 mb-1">
+            <li key={q.id} className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-gray-200 dark:border-slate-800 shadow-soft">
+              <p className="font-medium text-gray-900 dark:text-white mb-1">
                 Câu {qi + 1}. {q.text}
               </p>
               {q.type === 'MULTI' && (
-                <p className="text-xs text-gray-500 mb-2">(Có thể có nhiều đáp án đúng)</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">(Có thể có nhiều đáp án đúng)</p>
               )}
               <div className="space-y-2">
                 {q.choices.map((c) => {
@@ -94,17 +94,17 @@ export default function QuizPage() {
                   // Sau khi nộp: tô xanh đáp án đúng.
                   const stateClass = result
                     ? isCorrectChoice
-                      ? 'border-green-400 bg-green-50'
+                      ? 'border-green-400 bg-green-50 dark:border-emerald-500/50 dark:bg-emerald-500/10'
                       : selected
-                        ? 'border-red-400 bg-red-50'
-                        : 'border-gray-200'
+                        ? 'border-red-400 bg-red-50 dark:border-red-500/50 dark:bg-red-500/10'
+                        : 'border-gray-200 dark:border-slate-700'
                     : selected
-                      ? 'border-brand-400 bg-brand-50'
-                      : 'border-gray-200';
+                      ? 'border-brand-400 bg-brand-50 dark:border-brand-500/60 dark:bg-brand-500/10'
+                      : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600';
                   return (
                     <label
                       key={c.id}
-                      className={`flex items-center gap-2 p-2 rounded border cursor-pointer ${stateClass}`}
+                      className={`flex items-center gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-colors ${stateClass}`}
                     >
                       <input
                         type={q.type === 'SINGLE' ? 'radio' : 'checkbox'}
@@ -112,8 +112,9 @@ export default function QuizPage() {
                         checked={selected}
                         disabled={Boolean(result)}
                         onChange={() => toggleChoice(q.id, c.id, q.type === 'SINGLE')}
+                        className="accent-brand-600"
                       />
-                      <span className="text-sm text-gray-800">{c.text}</span>
+                      <span className="text-sm text-gray-800 dark:text-slate-200">{c.text}</span>
                     </label>
                   );
                 })}
@@ -134,7 +135,7 @@ export default function QuizPage() {
           >
             {submitting ? 'Đang chấm...' : 'Nộp quiz'}
           </button>
-          {!user && <span className="text-xs text-gray-500">Đăng nhập để lưu điểm.</span>}
+          {!user && <span className="text-xs text-gray-500 dark:text-slate-400">Đăng nhập để lưu điểm.</span>}
         </div>
       )}
     </div>

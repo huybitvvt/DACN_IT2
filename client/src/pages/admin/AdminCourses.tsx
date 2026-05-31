@@ -79,11 +79,11 @@ export default function AdminCourses() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Quản lý khoá học</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Quản lý khoá học</h1>
       {error && <Alert type="error">{error}</Alert>}
 
-      <div className="bg-white p-4 rounded-lg border border-gray-200 space-y-3">
-        <h2 className="font-semibold">{editingId ? 'Sửa khoá học' : 'Thêm khoá học'}</h2>
+      <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-gray-200 dark:border-slate-800 shadow-soft space-y-3">
+        <h2 className="font-semibold text-gray-900 dark:text-white">{editingId ? 'Sửa khoá học' : 'Thêm khoá học'}</h2>
         <div className="grid sm:grid-cols-2 gap-3">
           <input
             className="px-3 py-2 border border-gray-300 rounded text-sm"
@@ -135,7 +135,7 @@ export default function AdminCourses() {
                 setEditingId(null);
                 setForm(empty);
               }}
-              className="px-4 py-2 rounded border border-gray-300 text-sm"
+              className="px-4 py-2 rounded border border-gray-300 dark:border-slate-700 dark:text-slate-200 text-sm"
             >
               Huỷ
             </button>
@@ -143,33 +143,35 @@ export default function AdminCourses() {
         </div>
       </div>
 
-      <table className="w-full text-sm bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <thead className="bg-gray-50 text-left">
-          <tr>
-            <th className="p-3">Tiêu đề</th>
-            <th className="p-3">Slug</th>
-            <th className="p-3">Ngôn ngữ</th>
-            <th className="p-3 text-right">Hành động</th>
-          </tr>
-        </thead>
-        <tbody>
-          {courses.map((c) => (
-            <tr key={c.id} className="border-t border-gray-100">
-              <td className="p-3">{c.title}</td>
-              <td className="p-3 text-gray-500">{c.slug}</td>
-              <td className="p-3">{c.language}</td>
-              <td className="p-3 text-right space-x-2">
-                <button onClick={() => startEdit(c)} className="text-brand-700 hover:underline">
-                  Sửa
-                </button>
-                <button onClick={() => handleDelete(c.id)} className="text-red-600 hover:underline">
-                  Xoá
-                </button>
-              </td>
+      <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-slate-800">
+        <table className="w-full text-sm bg-white dark:bg-slate-900">
+          <thead className="bg-gray-50 dark:bg-slate-800/60 text-left text-gray-600 dark:text-slate-300">
+            <tr>
+              <th className="p-3 font-semibold">Tiêu đề</th>
+              <th className="p-3 font-semibold">Slug</th>
+              <th className="p-3 font-semibold">Ngôn ngữ</th>
+              <th className="p-3 font-semibold text-right">Hành động</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="text-gray-800 dark:text-slate-200">
+            {courses.map((c) => (
+              <tr key={c.id} className="border-t border-gray-100 dark:border-slate-800">
+                <td className="p-3">{c.title}</td>
+                <td className="p-3 text-gray-500 dark:text-slate-400">{c.slug}</td>
+                <td className="p-3">{c.language}</td>
+                <td className="p-3 text-right space-x-2">
+                  <button onClick={() => startEdit(c)} className="text-brand-700 dark:text-brand-400 hover:underline">
+                    Sửa
+                  </button>
+                  <button onClick={() => handleDelete(c.id)} className="text-red-600 dark:text-red-400 hover:underline">
+                    Xoá
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

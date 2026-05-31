@@ -20,8 +20,27 @@ body {
 
 /* Nền tối cho toàn trang khi bật dark mode */
 html.dark body {
-  background-color: #15171c;
-  color: #e5e7eb;
+  background-color: #0b1120;
+  color: #e2e8f0;
+}
+
+/* ===== Form controls "trần" trong dark mode (chủ yếu trang admin) ===== */
+/* Lưu ý: các input có sẵn class dark:* (TextField, chat...) vẫn được ưu tiên
+   vì class selector thắng element selector. */
+html.dark input:not([type='checkbox']):not([type='radio']):not([type='range']),
+html.dark select,
+html.dark textarea {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #64748b;
+}
+html.dark option {
+  background-color: #1e293b;
+  color: #e2e8f0;
 }
 
 /* Thanh cuộn mảnh, hiện đại */
@@ -181,5 +200,126 @@ html.dark .lesson-content tr:nth-child(even) {
     left: 0;
     top: 0;
     width: 100%;
+  }
+}
+
+/* =========================================================
+   Premium design system — tiện ích cao cấp dùng lại nhiều nơi
+   ========================================================= */
+@layer components {
+  /* Chữ gradient cao cấp */
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+  }
+
+  /* Thẻ kính (glassmorphism) trên nền tối */
+  .glass-dark {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  /* Thẻ kính trên nền sáng */
+  .glass-light {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+  }
+
+  /* Viền gradient (dùng mask để chỉ tô viền) */
+  .border-gradient {
+    position: relative;
+  }
+  .border-gradient::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(4, 170, 109, 0.6), rgba(56, 189, 248, 0.5), rgba(139, 92, 246, 0.6));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .border-gradient:hover::before {
+    opacity: 1;
+  }
+}
+
+@layer utilities {
+  /* Spotlight theo con trỏ — dùng biến --mx/--my (phần trăm) */
+  .spotlight {
+    position: relative;
+    overflow: hidden;
+  }
+  .spotlight::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      320px circle at var(--mx, 50%) var(--my, 50%),
+      rgba(4, 170, 109, 0.16),
+      transparent 60%
+    );
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    pointer-events: none;
+  }
+  .spotlight:hover::after {
+    opacity: 1;
+  }
+
+  /* Hạt nhiễu mịn (film grain) tăng chiều sâu cho nền tối */
+  .grain {
+    position: relative;
+  }
+  .grain::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* Ẩn thanh cuộn nhưng vẫn cuộn được */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* Phần tử dùng scroll-reveal: ẩn trước, hiện khi vào viewport */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Tôn trọng người dùng tắt hiệu ứng chuyển động */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
   }
 }

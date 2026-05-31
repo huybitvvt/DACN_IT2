@@ -12,7 +12,7 @@ export default function AdminLayout() {
   return (
     <div className="grid md:grid-cols-[200px_1fr] gap-6">
       <aside>
-        <h2 className="text-sm font-semibold text-gray-500 uppercase mb-2">Quản trị</h2>
+        <h2 className="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase mb-2">Quản trị</h2>
         <nav className="space-y-1">
           {adminNav.map((item) => (
             <NavLink
@@ -20,8 +20,10 @@ export default function AdminLayout() {
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `block px-3 py-2 rounded-lg text-sm ${
-                  isActive ? 'bg-brand-600 text-white' : 'text-gray-700 hover:bg-gray-100'
+                `block px-3 py-2 rounded-lg text-sm transition-colors ${
+                  isActive
+                    ? 'bg-brand-600 text-white'
+                    : 'text-gray-700 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-white/5'
                 }`
               }
             >

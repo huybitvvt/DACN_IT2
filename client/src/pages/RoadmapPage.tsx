@@ -77,29 +77,31 @@ export default function RoadmapPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Lộ trình: {course.title}</h1>
-        <p className="text-gray-600">{course.description}</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Lộ trình: {course.title}</h1>
+        <p className="text-gray-600 dark:text-slate-400">{course.description}</p>
       </div>
 
-      <ol className="relative border-l-2 border-gray-200 ml-3 space-y-4">
+      <ol className="relative border-l-2 border-gray-200 dark:border-slate-700 ml-3 space-y-4">
         {steps.map((step) => (
           <li key={`${step.type}-${step.id}`} className="ml-6">
             <span
               className={`absolute -left-[11px] flex items-center justify-center w-5 h-5 rounded-full text-xs ${
-                step.completed ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'
+                step.completed
+                  ? 'bg-green-500 text-white'
+                  : 'bg-gray-200 text-gray-500 dark:bg-slate-700 dark:text-slate-400'
               }`}
             >
               {step.completed ? '✓' : ''}
             </span>
             <Link
               to={step.to}
-              className={`block p-3 rounded-lg border ${
+              className={`block p-3 rounded-lg border transition-colors ${
                 step.completed
-                  ? 'bg-green-50 border-green-200'
-                  : 'bg-white border-gray-200 hover:border-brand-400'
+                  ? 'bg-green-50 border-green-200 dark:bg-emerald-500/10 dark:border-emerald-500/30'
+                  : 'bg-white border-gray-200 hover:border-brand-400 dark:bg-slate-900 dark:border-slate-800 dark:hover:border-brand-500/60'
               }`}
             >
-              <span className="text-gray-800">{step.label}</span>
+              <span className="text-gray-800 dark:text-slate-200">{step.label}</span>
             </Link>
           </li>
         ))}
