@@ -50,8 +50,6 @@ Render hỗ trợ Node + PostgreSQL miễn phí, **không cần thẻ tín dụn
 | `SMTP_USER` | email Gmail dùng gửi mã |
 | `SMTP_PASS` | Gmail App Password |
 | `SMTP_FROM` | `CodeLearn <email Gmail dùng gửi mã>` |
-| `RESEND_API_KEY` | API key Resend nếu dùng Render Free |
-| `RESEND_FROM` | email gửi đã xác thực trên Resend |
 | `GROQ_API_KEY` | khoá Groq của bạn |
 | `GROQ_MODEL` | `llama-3.3-70b-versatile` |
 | `ENABLE_SEMANTIC_RAG` | `false` |
@@ -93,8 +91,8 @@ xong là website đã có sẵn 4 khoá học + tài khoản admin.
 - **Bí mật**: không commit `.env`. Mọi khoá điền trực tiếp trong dashboard Render.
 - **Gmail SMTP**: tài khoản gửi mã cần bật 2-Step Verification và tạo **App Password**.
   Không dùng mật khẩu đăng nhập Gmail thường cho `SMTP_PASS`.
-- **Render Free chặn SMTP**: nếu dùng Web Service Free, các cổng SMTP `25`, `465`, `587`
-  bị chặn. Khi đó hãy dùng `RESEND_API_KEY` + `RESEND_FROM` để gửi email qua HTTPS.
+- **Render Free có thể chặn SMTP**: nếu gửi Gmail SMTP bị timeout trên cổng `465`,
+  hãy nâng Web Service lên gói trả phí hoặc chạy trên môi trường cho phép outbound SMTP.
 
 ---
 
