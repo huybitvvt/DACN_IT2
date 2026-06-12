@@ -45,6 +45,8 @@ export const env = {
   smtpUser: optional('SMTP_USER'),
   smtpPass: optional('SMTP_PASS'),
   smtpFrom: optional('SMTP_FROM', optional('SMTP_USER')),
+  resendApiKey: optional('RESEND_API_KEY'),
+  resendFrom: optional('RESEND_FROM'),
 
   get isProduction() {
     return this.nodeEnv === 'production';
