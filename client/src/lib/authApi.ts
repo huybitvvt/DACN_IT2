@@ -23,7 +23,9 @@ export interface LoginPayload {
 }
 
 export async function requestRegistrationCode(payload: RegisterPayload): Promise<RegisterCodeResponse> {
-  const { data } = await api.post<RegisterCodeResponse>('/auth/register', payload);
+  const { data } = await api.post<RegisterCodeResponse>('/auth/register', payload, {
+    timeout: 25_000,
+  });
   return data;
 }
 
