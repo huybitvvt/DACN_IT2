@@ -41,6 +41,15 @@ function buildRegistrationEmail(params: {
   };
 }
 
+function extractResendErrorMessage(body: string) {
+  try {
+    const parsed = JSON.parse(body) as { message?: string; error?: string };
+    return parsed.message ?? parsed.error ?? body;
+  } catch {
+    return body;
+  }
+}
+
 async function sendViaResend(params: {
   to: string;
   displayName: string;
@@ -66,8 +75,14 @@ async function sendViaResend(params: {
 
   if (!res.ok) {
     const body = await res.text();
+    const message = extractResendErrorMessage(body);
     console.error('[email] Resend API trả lỗi:', res.status, body);
-    throw AppError.badGateway('Không gửi được email xác thực qua Resend.');
+    if (res.status === 403 && message.includes('You can only send testing emails')) {
+      throw AppError.badGateway(
+        'Resend đang dùng domain test nên chỉ gửi được tới email của tài khoản Resend. Hãy verify domain trong Resend hoặc thử bằng đúng email tài khoản Resend.',
+      );
+    }
+    throw AppError.badGateway(`Không gửi được email xác thực qua Resend: ${message}`);
   }
 }
 
