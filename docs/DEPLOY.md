@@ -44,6 +44,12 @@ Render hỗ trợ Node + PostgreSQL miễn phí, **không cần thẻ tín dụn
 | `DATABASE_URL` | dán Internal Database URL ở Bước 2 |
 | `JWT_SECRET` | một chuỗi ngẫu nhiên dài bất kỳ |
 | `JWT_EXPIRES_IN` | `7d` |
+| `SMTP_HOST` | `smtp.gmail.com` |
+| `SMTP_PORT` | `465` |
+| `SMTP_SECURE` | `true` |
+| `SMTP_USER` | email Gmail dùng gửi mã |
+| `SMTP_PASS` | Gmail App Password |
+| `SMTP_FROM` | `CodeLearn <email Gmail dùng gửi mã>` |
 | `GROQ_API_KEY` | khoá Groq của bạn |
 | `GROQ_MODEL` | `llama-3.3-70b-versatile` |
 | `ENABLE_SEMANTIC_RAG` | `false` |
@@ -82,6 +88,8 @@ xong là website đã có sẵn 4 khoá học + tài khoản admin.
   Nếu dùng máy/server mạnh hơn, có thể đặt `ENABLE_SEMANTIC_RAG=true`.
 - **Chạy code C/C++** gọi Wandbox (Internet) — Render có Internet nên chạy bình thường.
 - **Bí mật**: không commit `.env`. Mọi khoá điền trực tiếp trong dashboard Render.
+- **Gmail SMTP**: tài khoản gửi mã cần bật 2-Step Verification và tạo **App Password**.
+  Không dùng mật khẩu đăng nhập Gmail thường cho `SMTP_PASS`.
 
 ---
 

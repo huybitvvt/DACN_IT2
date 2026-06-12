@@ -7,13 +7,28 @@ export interface RegisterPayload {
   password: string;
 }
 
+export interface RegisterCodeResponse {
+  message: string;
+  expiresInMinutes: number;
+}
+
+export interface VerifyRegistrationPayload {
+  email: string;
+  code: string;
+}
+
 export interface LoginPayload {
   email: string;
   password: string;
 }
 
-export async function registerRequest(payload: RegisterPayload): Promise<User> {
-  const { data } = await api.post<{ user: User }>('/auth/register', payload);
+export async function requestRegistrationCode(payload: RegisterPayload): Promise<RegisterCodeResponse> {
+  const { data } = await api.post<RegisterCodeResponse>('/auth/register', payload);
+  return data;
+}
+
+export async function verifyRegistrationCode(payload: VerifyRegistrationPayload): Promise<User> {
+  const { data } = await api.post<{ user: User }>('/auth/register/verify', payload);
   return data.user;
 }
 

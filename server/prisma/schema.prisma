@@ -69,6 +69,20 @@ model User {
   @@index([email])
 }
 
+model RegistrationVerification {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  displayName  String
+  passwordHash String
+  codeHash     String
+  attempts     Int      @default(0)
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([expiresAt])
+}
+
 model Badge {
   id          String      @id @default(cuid())
   code        String      @unique

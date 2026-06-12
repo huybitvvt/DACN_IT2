@@ -2,15 +2,32 @@ import type { Request, Response } from 'express';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { AppError } from '../../utils/AppError.js';
 import { AUTH_COOKIE, authCookieOptions, signToken } from '../../utils/jwt.js';
-import { loginSchema, registerSchema } from './auth.schema.js';
-import { authenticate, getUserById, registerUser, toPublicUser } from './auth.service.js';
+import { loginSchema, registerSchema, verifyRegistrationSchema } from './auth.schema.js';
+import {
+  authenticate,
+  getUserById,
+  requestRegistrationCode,
+  toPublicUser,
+  verifyRegistrationCode,
+} from './auth.service.js';
 
 // POST /api/auth/register
 export const register = asyncHandler(async (req: Request, res: Response) => {
   const input = registerSchema.parse(req.body);
-  const user = await registerUser(input);
+  const result = await requestRegistrationCode(input);
 
-  // Đăng ký xong tự đăng nhập luôn cho tiện.
+  res.status(202).json({
+    message: 'Mã xác thực đã được gửi đến email của bạn.',
+    expiresInMinutes: result.expiresInMinutes,
+  });
+});
+
+// POST /api/auth/register/verify
+export const verifyRegister = asyncHandler(async (req: Request, res: Response) => {
+  const input = verifyRegistrationSchema.parse(req.body);
+  const user = await verifyRegistrationCode(input);
+
+  // Xác thực xong tự đăng nhập luôn cho tiện.
   const token = signToken({ sub: user.id, role: user.role });
   res.cookie(AUTH_COOKIE, token, authCookieOptions());
 

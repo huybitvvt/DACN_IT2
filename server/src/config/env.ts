@@ -39,6 +39,13 @@ export const env = {
   // Trình chạy code C/C++ qua Wandbox (miễn phí, không cần key).
   wandboxUrl: optional('WANDBOX_URL', 'https://wandbox.org'),
 
+  smtpHost: optional('SMTP_HOST'),
+  smtpPort: Number(optional('SMTP_PORT', '465')),
+  smtpSecure: optional('SMTP_SECURE', 'true') === 'true',
+  smtpUser: optional('SMTP_USER'),
+  smtpPass: optional('SMTP_PASS'),
+  smtpFrom: optional('SMTP_FROM', optional('SMTP_USER')),
+
   get isProduction() {
     return this.nodeEnv === 'production';
   },
