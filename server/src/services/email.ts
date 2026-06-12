@@ -21,21 +21,27 @@ function escapeHtml(value: string) {
 
 function buildRegistrationEmail(params: {
   displayName: string;
-  code: string;
+  verifyUrl: string;
   expiresInMinutes: number;
 }) {
   const safeName = escapeHtml(params.displayName);
-  const safeCode = escapeHtml(params.code);
+  const safeVerifyUrl = escapeHtml(params.verifyUrl);
 
   return {
-    subject: 'Mã xác thực đăng ký CodeLearn',
-    text: `Xin chào ${params.displayName}, mã xác thực đăng ký CodeLearn của bạn là ${params.code}. Mã hết hạn sau ${params.expiresInMinutes} phút.`,
+    subject: 'Xác thực tài khoản CodeLearn',
+    text: `Xin chào ${params.displayName}, bấm link sau để xác thực tài khoản CodeLearn: ${params.verifyUrl}. Link hết hạn sau ${params.expiresInMinutes} phút.`,
     html: `
       <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827">
         <p>Xin chào ${safeName},</p>
-        <p>Mã xác thực đăng ký CodeLearn của bạn là:</p>
-        <p style="font-size:28px;font-weight:700;letter-spacing:6px;margin:16px 0">${safeCode}</p>
-        <p>Mã sẽ hết hạn sau ${params.expiresInMinutes} phút. Nếu bạn không đăng ký tài khoản, vui lòng bỏ qua email này.</p>
+        <p>Bấm nút bên dưới để xác thực tài khoản CodeLearn của bạn:</p>
+        <p style="margin:24px 0">
+          <a href="${safeVerifyUrl}" style="display:inline-block;background:#059669;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:8px;font-weight:700">
+            Xác thực tài khoản
+          </a>
+        </p>
+        <p>Nếu nút không hoạt động, hãy mở link này:</p>
+        <p><a href="${safeVerifyUrl}">${safeVerifyUrl}</a></p>
+        <p>Link sẽ hết hạn sau ${params.expiresInMinutes} phút. Nếu bạn không đăng ký tài khoản, vui lòng bỏ qua email này.</p>
       </div>
     `,
   };
@@ -53,7 +59,7 @@ function extractResendErrorMessage(body: string) {
 async function sendViaResend(params: {
   to: string;
   displayName: string;
-  code: string;
+  verifyUrl: string;
   expiresInMinutes: number;
 }) {
   const message = buildRegistrationEmail(params);
@@ -89,7 +95,7 @@ async function sendViaResend(params: {
 async function sendViaSmtp(params: {
   to: string;
   displayName: string;
-  code: string;
+  verifyUrl: string;
   expiresInMinutes: number;
 }) {
   const transporter = nodemailer.createTransport({
@@ -125,10 +131,10 @@ async function sendViaSmtp(params: {
   }
 }
 
-export async function sendRegistrationCodeEmail(params: {
+export async function sendRegistrationVerificationEmail(params: {
   to: string;
   displayName: string;
-  code: string;
+  verifyUrl: string;
   expiresInMinutes: number;
 }) {
   if (isResendConfigured()) {
@@ -151,5 +157,5 @@ export async function sendRegistrationCodeEmail(params: {
     throw AppError.internal('Chưa cấu hình dịch vụ gửi email xác thực.');
   }
 
-  console.info(`[email-dev] Mã xác thực cho ${params.to}: ${params.code}`);
+  console.info(`[email-dev] Link xác thực cho ${params.to}: ${params.verifyUrl}`);
 }

@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import { env } from '../../config/env.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { AppError } from '../../utils/AppError.js';
 import { AUTH_COOKIE, authCookieOptions, signToken } from '../../utils/jwt.js';
@@ -17,7 +18,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
   const result = await requestRegistrationCode(input);
 
   res.status(202).json({
-    message: 'Mã xác thực đã được gửi đến email của bạn.',
+    message: 'Link xác thực đã được gửi đến email của bạn.',
     expiresInMinutes: result.expiresInMinutes,
   });
 });
@@ -32,6 +33,19 @@ export const verifyRegister = asyncHandler(async (req: Request, res: Response) =
   res.cookie(AUTH_COOKIE, token, authCookieOptions());
 
   res.status(201).json({ user });
+});
+
+// GET /api/auth/register/verify-link
+export const verifyRegisterLink = asyncHandler(async (req: Request, res: Response) => {
+  const input = verifyRegistrationSchema.parse(req.query);
+  const user = await verifyRegistrationCode(input);
+
+  const token = signToken({ sub: user.id, role: user.role });
+  res.cookie(AUTH_COOKIE, token, authCookieOptions());
+
+  const redirectUrl = new URL('/', env.clientOrigin);
+  redirectUrl.searchParams.set('verified', '1');
+  res.redirect(302, redirectUrl.toString());
 });
 
 // POST /api/auth/login

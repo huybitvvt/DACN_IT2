@@ -57,6 +57,7 @@ Render hỗ trợ Node + PostgreSQL miễn phí, **không cần thẻ tín dụn
 | `ENABLE_SEMANTIC_RAG` | `false` |
 | `WANDBOX_URL` | `https://wandbox.org` |
 | `CLIENT_ORIGIN` | URL service (điền sau khi có, vd `https://codelearn.onrender.com`) |
+| `PUBLIC_API_URL` | bỏ trống nếu API và frontend chung domain; nếu tách domain thì điền URL backend |
 
 4. **Create Web Service**. Render sẽ build (lần đầu ~5-10 phút).
 

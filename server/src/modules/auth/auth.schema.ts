@@ -13,10 +13,11 @@ export const registerSchema = z.object({
 
 export const verifyRegistrationSchema = z.object({
   email: z.string().trim().toLowerCase().email('Email không hợp lệ.'),
-  code: z
+  token: z
     .string()
     .trim()
-    .regex(/^\d{6}$/, 'Mã xác thực gồm 6 chữ số.'),
+    .min(32, 'Link xác thực không hợp lệ.')
+    .max(256, 'Link xác thực không hợp lệ.'),
 });
 
 export const loginSchema = z.object({

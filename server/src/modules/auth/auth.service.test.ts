@@ -19,7 +19,7 @@ vi.mock('../../db/prisma.js', () => ({
 }));
 
 vi.mock('../../services/email.js', () => ({
-  sendRegistrationCodeEmail: vi.fn(),
+  sendRegistrationVerificationEmail: vi.fn(),
 }));
 
 import { prisma } from '../../db/prisma.js';
@@ -32,11 +32,11 @@ import {
 } from './auth.service.js';
 import { hashPassword } from '../../utils/password.js';
 import { AppError } from '../../utils/AppError.js';
-import { sendRegistrationCodeEmail } from '../../services/email.js';
+import { sendRegistrationVerificationEmail } from '../../services/email.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockedPrisma = prisma as any;
-const mockedSendEmail = vi.mocked(sendRegistrationCodeEmail);
+const mockedSendEmail = vi.mocked(sendRegistrationVerificationEmail);
 
 function fakeUser(overrides: Record<string, unknown> = {}) {
   return {
@@ -53,8 +53,12 @@ function fakeUser(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function hashRegistrationCode(email: string, code: string) {
-  return createHash('sha256').update(`${email}:${code}`).digest('hex');
+function hashRegistrationToken(email: string, token: string) {
+  return createHash('sha256').update(`${email}:${token}`).digest('hex');
+}
+
+function extractToken(verifyUrl: string) {
+  return new URL(verifyUrl).searchParams.get('token') ?? '';
 }
 
 describe('auth.service', () => {
@@ -102,7 +106,7 @@ describe('auth.service', () => {
   });
 
   describe('requestRegistrationCode', () => {
-    it('lưu mã dạng hash và gửi email xác thực', async () => {
+    it('lưu token dạng hash và gửi link xác thực', async () => {
       mockedPrisma.user.findUnique.mockResolvedValue(null);
       mockedPrisma.registrationVerification.upsert.mockResolvedValue({});
 
@@ -112,29 +116,30 @@ describe('auth.service', () => {
         password: 'matkhau123',
       });
 
-      expect(result.expiresInMinutes).toBe(10);
+      expect(result.expiresInMinutes).toBe(30);
       expect(mockedPrisma.registrationVerification.upsert).toHaveBeenCalledOnce();
       expect(mockedSendEmail).toHaveBeenCalledOnce();
 
-      const sentCode = mockedSendEmail.mock.calls[0][0].code;
-      expect(sentCode).toMatch(/^\d{6}$/);
+      const verifyUrl = mockedSendEmail.mock.calls[0][0].verifyUrl;
+      const sentToken = extractToken(verifyUrl);
+      expect(sentToken.length).toBeGreaterThanOrEqual(32);
 
       const upsertArg = mockedPrisma.registrationVerification.upsert.mock.calls[0][0];
-      expect(upsertArg.create.codeHash).toBe(hashRegistrationCode('new@b.com', sentCode));
-      expect(upsertArg.create.codeHash).not.toBe(sentCode);
+      expect(upsertArg.create.codeHash).toBe(hashRegistrationToken('new@b.com', sentToken));
+      expect(upsertArg.create.codeHash).not.toBe(sentToken);
       expect(upsertArg.create.passwordHash).not.toBe('matkhau123');
     });
   });
 
   describe('verifyRegistrationCode', () => {
-    it('tạo user và xoá mã chờ khi mã đúng', async () => {
-      const code = '123456';
+    it('tạo user và xoá mã chờ khi token đúng', async () => {
+      const token = 'abcdefghijklmnopqrstuvwxyz1234567890';
       const pending = {
         id: 'v1',
         email: 'new@b.com',
         displayName: 'Mới',
         passwordHash: 'hash123',
-        codeHash: hashRegistrationCode('new@b.com', code),
+        codeHash: hashRegistrationToken('new@b.com', token),
         attempts: 0,
         expiresAt: new Date(Date.now() + 60_000),
         createdAt: new Date(),
@@ -147,7 +152,7 @@ describe('auth.service', () => {
       );
       mockedPrisma.registrationVerification.delete.mockResolvedValue(pending);
 
-      const user = await verifyRegistrationCode({ email: 'new@b.com', code });
+      const user = await verifyRegistrationCode({ email: 'new@b.com', token });
 
       expect(user.email).toBe('new@b.com');
       expect(mockedPrisma.user.create).toHaveBeenCalledWith({
@@ -162,27 +167,24 @@ describe('auth.service', () => {
       });
     });
 
-    it('tăng số lần thử khi mã sai', async () => {
+    it('từ chối khi token sai', async () => {
       mockedPrisma.registrationVerification.findUnique.mockResolvedValue({
         id: 'v1',
         email: 'new@b.com',
         displayName: 'Mới',
         passwordHash: 'hash123',
-        codeHash: hashRegistrationCode('new@b.com', '123456'),
+        codeHash: hashRegistrationToken('new@b.com', 'abcdefghijklmnopqrstuvwxyz1234567890'),
         attempts: 0,
         expiresAt: new Date(Date.now() + 60_000),
         createdAt: new Date(),
         updatedAt: new Date(),
       });
 
-      await expect(verifyRegistrationCode({ email: 'new@b.com', code: '000000' })).rejects.toBeInstanceOf(
-        AppError,
-      );
+      await expect(
+        verifyRegistrationCode({ email: 'new@b.com', token: 'wrong-token-abcdefghijklmnopqrstuvwxyz' }),
+      ).rejects.toBeInstanceOf(AppError);
 
-      expect(mockedPrisma.registrationVerification.update).toHaveBeenCalledWith({
-        where: { email: 'new@b.com' },
-        data: { attempts: { increment: 1 } },
-      });
+      expect(mockedPrisma.registrationVerification.update).not.toHaveBeenCalled();
     });
   });
 

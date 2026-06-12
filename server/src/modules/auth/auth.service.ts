@@ -1,13 +1,13 @@
 import type { User } from '@prisma/client';
-import { createHash, randomInt } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
+import { env } from '../../config/env.js';
 import { prisma } from '../../db/prisma.js';
-import { sendRegistrationCodeEmail } from '../../services/email.js';
+import { sendRegistrationVerificationEmail } from '../../services/email.js';
 import { AppError } from '../../utils/AppError.js';
 import { hashPassword, verifyPassword } from '../../utils/password.js';
 import type { LoginInput, RegisterInput, VerifyRegistrationInput } from './auth.schema.js';
 
-const REGISTRATION_CODE_EXPIRES_MINUTES = 10;
-const MAX_REGISTRATION_CODE_ATTEMPTS = 5;
+const REGISTRATION_LINK_EXPIRES_MINUTES = 30;
 
 // Dạng dữ liệu người dùng an toàn để trả ra ngoài (không có passwordHash).
 export interface PublicUser {
@@ -28,12 +28,20 @@ export function toPublicUser(user: User): PublicUser {
   };
 }
 
-function createNumericCode() {
-  return String(randomInt(100000, 1000000));
+function createVerificationToken() {
+  return randomBytes(32).toString('base64url');
 }
 
-function hashRegistrationCode(email: string, code: string) {
-  return createHash('sha256').update(`${email}:${code}`).digest('hex');
+function hashRegistrationToken(email: string, token: string) {
+  return createHash('sha256').update(`${email}:${token}`).digest('hex');
+}
+
+function createRegistrationVerifyUrl(email: string, token: string) {
+  const baseUrl = env.publicApiUrl || env.clientOrigin;
+  const url = new URL('/api/auth/register/verify-link', baseUrl);
+  url.searchParams.set('email', email);
+  url.searchParams.set('token', token);
+  return url.toString();
 }
 
 // Đăng ký người dùng mới. Ném lỗi nếu email đã tồn tại (Yêu cầu 1.2).
@@ -61,9 +69,9 @@ export async function requestRegistrationCode(input: RegisterInput) {
     throw AppError.badRequest('Email này đã được đăng ký.');
   }
 
-  const code = createNumericCode();
+  const token = createVerificationToken();
   const passwordHash = await hashPassword(input.password);
-  const expiresAt = new Date(Date.now() + REGISTRATION_CODE_EXPIRES_MINUTES * 60 * 1000);
+  const expiresAt = new Date(Date.now() + REGISTRATION_LINK_EXPIRES_MINUTES * 60 * 1000);
 
   await prisma.registrationVerification.upsert({
     where: { email: input.email },
@@ -71,26 +79,26 @@ export async function requestRegistrationCode(input: RegisterInput) {
       email: input.email,
       displayName: input.displayName,
       passwordHash,
-      codeHash: hashRegistrationCode(input.email, code),
+      codeHash: hashRegistrationToken(input.email, token),
       expiresAt,
     },
     update: {
       displayName: input.displayName,
       passwordHash,
-      codeHash: hashRegistrationCode(input.email, code),
+      codeHash: hashRegistrationToken(input.email, token),
       attempts: 0,
       expiresAt,
     },
   });
 
-  await sendRegistrationCodeEmail({
+  await sendRegistrationVerificationEmail({
     to: input.email,
     displayName: input.displayName,
-    code,
-    expiresInMinutes: REGISTRATION_CODE_EXPIRES_MINUTES,
+    verifyUrl: createRegistrationVerifyUrl(input.email, token),
+    expiresInMinutes: REGISTRATION_LINK_EXPIRES_MINUTES,
   });
 
-  return { expiresInMinutes: REGISTRATION_CODE_EXPIRES_MINUTES };
+  return { expiresInMinutes: REGISTRATION_LINK_EXPIRES_MINUTES };
 }
 
 export async function verifyRegistrationCode(input: VerifyRegistrationInput): Promise<PublicUser> {
@@ -99,25 +107,17 @@ export async function verifyRegistrationCode(input: VerifyRegistrationInput): Pr
   });
 
   if (!pending) {
-    throw AppError.badRequest('Vui lòng đăng ký lại để nhận mã xác thực.');
+    throw AppError.badRequest('Vui lòng đăng ký lại để nhận link xác thực.');
   }
 
   if (pending.expiresAt.getTime() < Date.now()) {
     await prisma.registrationVerification.delete({ where: { email: input.email } });
-    throw AppError.badRequest('Mã xác thực đã hết hạn. Vui lòng yêu cầu mã mới.');
+    throw AppError.badRequest('Link xác thực đã hết hạn. Vui lòng đăng ký lại.');
   }
 
-  if (pending.attempts >= MAX_REGISTRATION_CODE_ATTEMPTS) {
-    throw AppError.badRequest('Bạn đã nhập sai quá nhiều lần. Vui lòng yêu cầu mã mới.');
-  }
-
-  const expectedHash = hashRegistrationCode(input.email, input.code);
+  const expectedHash = hashRegistrationToken(input.email, input.token);
   if (pending.codeHash !== expectedHash) {
-    await prisma.registrationVerification.update({
-      where: { email: input.email },
-      data: { attempts: { increment: 1 } },
-    });
-    throw AppError.badRequest('Mã xác thực không đúng.');
+    throw AppError.badRequest('Link xác thực không hợp lệ.');
   }
 
   const existing = await prisma.user.findUnique({ where: { email: input.email } });

@@ -22,6 +22,7 @@ export const env = {
   nodeEnv: optional('NODE_ENV', 'development'),
   port: Number(optional('PORT', '4000')),
   clientOrigin: optional('CLIENT_ORIGIN', 'http://localhost:5173'),
+  publicApiUrl: optional('PUBLIC_API_URL'),
 
   databaseUrl: required('DATABASE_URL'),
 

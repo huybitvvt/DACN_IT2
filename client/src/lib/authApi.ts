@@ -7,14 +7,14 @@ export interface RegisterPayload {
   password: string;
 }
 
-export interface RegisterCodeResponse {
+export interface RegisterVerificationResponse {
   message: string;
   expiresInMinutes: number;
 }
 
 export interface VerifyRegistrationPayload {
   email: string;
-  code: string;
+  token: string;
 }
 
 export interface LoginPayload {
@@ -22,8 +22,8 @@ export interface LoginPayload {
   password: string;
 }
 
-export async function requestRegistrationCode(payload: RegisterPayload): Promise<RegisterCodeResponse> {
-  const { data } = await api.post<RegisterCodeResponse>('/auth/register', payload, {
+export async function requestRegistrationCode(payload: RegisterPayload): Promise<RegisterVerificationResponse> {
+  const { data } = await api.post<RegisterVerificationResponse>('/auth/register', payload, {
     timeout: 25_000,
   });
   return data;
