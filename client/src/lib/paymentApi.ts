@@ -22,6 +22,7 @@ export async function createCourseCheckout(slug: string): Promise<CourseCheckout
   return data.checkout;
 }
 
-export async function confirmCourseDemo(slug: string): Promise<void> {
-  await api.post(`/courses/${slug}/checkout/demo-confirm`);
+export async function getCourseCheckoutStatus(slug: string): Promise<CourseCheckout['purchase']> {
+  const { data } = await api.get<{ purchase: CourseCheckout['purchase'] }>(`/courses/${slug}/checkout/status`);
+  return data.purchase;
 }

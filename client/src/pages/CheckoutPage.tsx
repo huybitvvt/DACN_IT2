@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { CheckCircle2, Copy, QrCode } from 'lucide-react';
-import { createCourseCheckout, confirmCourseDemo, type CourseCheckout } from '@/lib/paymentApi';
+import { CheckCircle2, Copy, Loader2, QrCode } from 'lucide-react';
+import { createCourseCheckout, getCourseCheckoutStatus, type CourseCheckout } from '@/lib/paymentApi';
 import { getErrorMessage } from '@/lib/api';
 import { formatVnd } from '@/lib/format';
 import Alert from '@/components/ui/Alert';
@@ -12,7 +12,7 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
   const [checkout, setCheckout] = useState<CourseCheckout | null>(null);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const [paid, setPaid] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
 
@@ -20,30 +20,46 @@ export default function CheckoutPage() {
     if (!slug) return;
     setLoading(true);
     createCourseCheckout(slug)
-      .then(setCheckout)
+      .then((nextCheckout) => {
+        setCheckout(nextCheckout);
+        if (nextCheckout.purchase.status === 'PAID') setPaid(true);
+      })
       .catch((err) => setError(getErrorMessage(err, 'Không tạo được mã thanh toán.')))
       .finally(() => setLoading(false));
   }, [slug]);
+
+  useEffect(() => {
+    if (!slug || !checkout || paid) return;
+
+    let stopped = false;
+    const pollStatus = async () => {
+      try {
+        const purchase = await getCourseCheckoutStatus(slug);
+        if (stopped) return;
+
+        setCheckout((current) => (current ? { ...current, purchase } : current));
+        if (purchase.status === 'PAID') {
+          setPaid(true);
+          window.setTimeout(() => navigate(`/courses/${slug}`, { replace: true }), 1600);
+        }
+      } catch (err) {
+        if (!stopped) setError(getErrorMessage(err, 'Không kiểm tra được trạng thái thanh toán.'));
+      }
+    };
+
+    void pollStatus();
+    const intervalId = window.setInterval(pollStatus, 4000);
+    return () => {
+      stopped = true;
+      window.clearInterval(intervalId);
+    };
+  }, [checkout?.purchase.id, navigate, paid, slug]);
 
   async function handleCopy() {
     if (!checkout) return;
     await navigator.clipboard.writeText(checkout.purchase.paymentCode);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1600);
-  }
-
-  async function handleDemoConfirm() {
-    if (!slug) return;
-    setSubmitting(true);
-    setError('');
-    try {
-      await confirmCourseDemo(slug);
-      navigate(`/courses/${slug}`, { replace: true });
-    } catch (err) {
-      setError(getErrorMessage(err, 'Không xác nhận được thanh toán.'));
-    } finally {
-      setSubmitting(false);
-    }
   }
 
   if (loading) return <Spinner />;
@@ -111,18 +127,14 @@ export default function CheckoutPage() {
               </div>
             </dl>
 
-            <Alert type="info">
-              Bản demo chưa nối webhook ngân hàng. Sau khi quét mã và chuyển khoản, dùng nút xác nhận demo để mở khoá học.
-            </Alert>
-
-            <button
-              type="button"
-              disabled={submitting}
-              onClick={handleDemoConfirm}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 py-2.5 font-semibold text-white shadow-soft transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
-            >
-              {submitting ? 'Đang xác nhận...' : 'Xác nhận demo và mở khoá'}
-            </button>
+            {paid ? (
+              <Alert type="success">Thanh toán đã hoàn tất. Đang mở khoá học...</Alert>
+            ) : (
+              <div className="flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-200">
+                <Loader2 className="h-5 w-5 shrink-0 animate-spin" />
+                <span>Đang chờ SePay xác nhận chuyển khoản. Vui lòng giữ nguyên nội dung thanh toán.</span>
+              </div>
+            )}
           </div>
         </div>
       )}

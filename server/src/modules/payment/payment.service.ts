@@ -102,21 +102,17 @@ export async function createCourseCheckout(userId: string, slug: string) {
   };
 }
 
-export async function confirmCoursePaymentDemo(userId: string, slug: string) {
+export async function getCourseCheckoutStatus(userId: string, slug: string) {
   const course = await prisma.course.findUnique({ where: { slug }, select: { id: true } });
   if (!course) throw AppError.notFound('Không tìm thấy khoá học.');
 
   const purchase = await prisma.coursePurchase.findUnique({
     where: { userId_courseId: { userId, courseId: course.id } },
+    select: { id: true, status: true, amountVnd: true, paymentCode: true, paidAt: true },
   });
   if (!purchase) throw AppError.badRequest('Bạn cần tạo mã thanh toán trước.');
 
-  await prisma.coursePurchase.update({
-    where: { id: purchase.id },
-    data: { status: 'PAID', paidAt: new Date() },
-  });
-
-  return { success: true };
+  return { purchase };
 }
 
 function parseVndAmount(value: string) {

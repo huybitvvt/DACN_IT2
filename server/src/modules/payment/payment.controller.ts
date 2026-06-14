@@ -4,8 +4,8 @@ import { env } from '../../config/env.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { AppError } from '../../utils/AppError.js';
 import {
-  confirmCoursePaymentDemo,
   createCourseCheckout,
+  getCourseCheckoutStatus,
   handleSepayPaymentGatewayIpn,
   handleSepayWebhook,
 } from './payment.service.js';
@@ -46,10 +46,10 @@ export const checkoutCourse = asyncHandler(async (req: Request, res: Response) =
   res.json({ checkout });
 });
 
-export const confirmCourseDemo = asyncHandler(async (req: Request, res: Response) => {
+export const checkoutStatus = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw AppError.unauthorized();
   const slug = slugSchema.parse(req.params.slug);
-  const result = await confirmCoursePaymentDemo(req.user.sub, slug);
+  const result = await getCourseCheckoutStatus(req.user.sub, slug);
   res.json(result);
 });
 
