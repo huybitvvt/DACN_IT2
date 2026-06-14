@@ -82,6 +82,8 @@ async function sendViaEmailJs(params: {
     console.error('[email] Không gửi được email qua EmailJS:', response.status, detail);
     throw AppError.badGateway('Không gửi được email qua EmailJS. Vui lòng kiểm tra cấu hình EmailJS.');
   }
+
+  console.info(`[email] Đã gửi email qua EmailJS tới ${params.to} bằng template ${params.templateId}.`);
 }
 
 async function sendViaSmtp(params: {

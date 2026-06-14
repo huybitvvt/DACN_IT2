@@ -168,7 +168,10 @@ export async function verifyRegistrationCode(input: VerifyRegistrationInput): Pr
 
 export async function requestPasswordReset(input: ForgotPasswordInput) {
   const user = await prisma.user.findUnique({ where: { email: input.email } });
-  if (!user) return { sent: true };
+  if (!user) {
+    console.info(`[auth] Bỏ qua gửi reset password vì email chưa có tài khoản: ${input.email}`);
+    return { sent: true };
+  }
 
   const token = createVerificationToken();
   const expiresAt = new Date(Date.now() + PASSWORD_RESET_LINK_EXPIRES_MINUTES * 60 * 1000);
