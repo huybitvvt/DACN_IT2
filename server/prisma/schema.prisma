@@ -135,7 +135,7 @@ model Course {
   title       String
   language    ProgrammingLanguage
   description String
-  priceVnd    Int                 @default(1000)
+  priceVnd    Int                 @default(2000)
   order       Int                 @default(0)
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt

@@ -72,15 +72,20 @@ export async function createCourseCheckout(userId: string, slug: string) {
   });
 
   const purchase =
-    existing ??
-    (await prisma.coursePurchase.create({
-      data: {
-        userId,
-        courseId: course.id,
-        amountVnd: course.priceVnd,
-        paymentCode: createPaymentCode(),
-      },
-    }));
+    existing && existing.status === 'PENDING' && existing.amountVnd !== course.priceVnd
+      ? await prisma.coursePurchase.update({
+          where: { id: existing.id },
+          data: { amountVnd: course.priceVnd },
+        })
+      : existing ??
+        (await prisma.coursePurchase.create({
+          data: {
+            userId,
+            courseId: course.id,
+            amountVnd: course.priceVnd,
+            paymentCode: createPaymentCode(),
+          },
+        }));
 
   return {
     course,
