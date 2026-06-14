@@ -6,6 +6,10 @@ function isSmtpConfigured() {
   return Boolean(env.smtpHost && env.smtpUser && env.smtpPass && env.smtpFrom);
 }
 
+function isEmailJsConfigured(templateId: string) {
+  return Boolean(env.emailjsServiceId && templateId && env.emailjsPublicKey);
+}
+
 function escapeHtml(value: string) {
   return value
     .replace(/&/g, '&amp;')
@@ -48,6 +52,36 @@ function buildButtonEmail(params: {
       </div>
     `,
   };
+}
+
+async function sendViaEmailJs(params: {
+  to: string;
+  displayName: string;
+  templateId: string;
+  templateParams: Record<string, string | number>;
+}) {
+  const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      service_id: env.emailjsServiceId,
+      template_id: params.templateId,
+      user_id: env.emailjsPublicKey,
+      accessToken: env.emailjsPrivateKey || undefined,
+      template_params: {
+        to_email: params.to,
+        to_name: params.displayName,
+        ...params.templateParams,
+      },
+    }),
+    signal: AbortSignal.timeout(15_000),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '');
+    console.error('[email] Không gửi được email qua EmailJS:', response.status, detail);
+    throw AppError.badGateway('Không gửi được email qua EmailJS. Vui lòng kiểm tra cấu hình EmailJS.');
+  }
 }
 
 async function sendViaSmtp(params: {
@@ -99,6 +133,19 @@ export async function sendRegistrationVerificationEmail(params: {
   verifyUrl: string;
   expiresInMinutes: number;
 }) {
+  if (isEmailJsConfigured(env.emailjsTemplateVerifyId)) {
+    await sendViaEmailJs({
+      to: params.to,
+      displayName: params.displayName,
+      templateId: env.emailjsTemplateVerifyId,
+      templateParams: {
+        verify_url: params.verifyUrl,
+        expires_in_minutes: params.expiresInMinutes,
+      },
+    });
+    return;
+  }
+
   if (isSmtpConfigured()) {
     await sendViaSmtp({
       to: params.to,
@@ -114,7 +161,7 @@ export async function sendRegistrationVerificationEmail(params: {
   }
 
   if (env.isProduction) {
-    throw AppError.internal('Chưa cấu hình SMTP để gửi email xác thực.');
+    throw AppError.internal('Chưa cấu hình EmailJS hoặc SMTP để gửi email xác thực.');
   }
 
   console.info(`[email-dev] Link xác thực cho ${params.to}: ${params.verifyUrl}`);
@@ -126,6 +173,19 @@ export async function sendPasswordResetEmail(params: {
   resetUrl: string;
   expiresInMinutes: number;
 }) {
+  if (isEmailJsConfigured(env.emailjsTemplateResetId)) {
+    await sendViaEmailJs({
+      to: params.to,
+      displayName: params.displayName,
+      templateId: env.emailjsTemplateResetId,
+      templateParams: {
+        reset_url: params.resetUrl,
+        expires_in_minutes: params.expiresInMinutes,
+      },
+    });
+    return;
+  }
+
   if (isSmtpConfigured()) {
     await sendViaSmtp({
       to: params.to,
@@ -141,7 +201,7 @@ export async function sendPasswordResetEmail(params: {
   }
 
   if (env.isProduction) {
-    throw AppError.internal('Chưa cấu hình SMTP để gửi email đặt lại mật khẩu.');
+    throw AppError.internal('Chưa cấu hình EmailJS hoặc SMTP để gửi email đặt lại mật khẩu.');
   }
 
   console.info(`[email-dev] Link đặt lại mật khẩu cho ${params.to}: ${params.resetUrl}`);

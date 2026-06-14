@@ -47,6 +47,12 @@ export const env = {
   smtpPass: optional('SMTP_PASS'),
   smtpFrom: optional('SMTP_FROM', optional('SMTP_USER')),
 
+  emailjsServiceId: optional('EMAILJS_SERVICE_ID'),
+  emailjsTemplateVerifyId: optional('EMAILJS_TEMPLATE_VERIFY_ID'),
+  emailjsTemplateResetId: optional('EMAILJS_TEMPLATE_RESET_ID'),
+  emailjsPublicKey: optional('EMAILJS_PUBLIC_KEY'),
+  emailjsPrivateKey: optional('EMAILJS_PRIVATE_KEY'),
+
   googleClientId: optional('GOOGLE_CLIENT_ID'),
   googleClientSecret: optional('GOOGLE_CLIENT_SECRET'),
   googleCallbackUrl: optional('GOOGLE_CALLBACK_URL'),

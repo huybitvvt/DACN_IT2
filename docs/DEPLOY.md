@@ -50,6 +50,11 @@ Render hỗ trợ Node + PostgreSQL miễn phí, **không cần thẻ tín dụn
 | `SMTP_USER` | email Gmail dùng gửi mã |
 | `SMTP_PASS` | Gmail App Password |
 | `SMTP_FROM` | `CodeLearn <email Gmail dùng gửi mã>` |
+| `EMAILJS_SERVICE_ID` | Service ID trong EmailJS |
+| `EMAILJS_TEMPLATE_VERIFY_ID` | Template ID email xác thực đăng ký |
+| `EMAILJS_TEMPLATE_RESET_ID` | Template ID email đặt lại mật khẩu |
+| `EMAILJS_PUBLIC_KEY` | Public Key trong EmailJS |
+| `EMAILJS_PRIVATE_KEY` | Private Key/Access Token trong EmailJS |
 | `GOOGLE_CLIENT_ID` | OAuth Client ID từ Google Cloud |
 | `GOOGLE_CLIENT_SECRET` | OAuth Client Secret từ Google Cloud |
 | `GOOGLE_CALLBACK_URL` | `https://dacn-it2.onrender.com/api/auth/google/callback` |
@@ -104,6 +109,8 @@ xong là website đã có sẵn 4 khoá học + tài khoản admin.
   Không dùng mật khẩu đăng nhập Gmail thường cho `SMTP_PASS`.
 - **Render Free có thể chặn SMTP**: nếu gửi Gmail SMTP bị timeout trên cổng `465`,
   hãy nâng Web Service lên gói trả phí hoặc chạy trên môi trường cho phép outbound SMTP.
+- **EmailJS**: nếu cấu hình `EMAILJS_*`, backend sẽ ưu tiên gửi email qua EmailJS HTTPS API
+  trước SMTP. Cách này phù hợp Render Free hơn vì không cần mở kết nối SMTP từ Render.
 - **Google OAuth**: trong Google Cloud Console tạo OAuth Client loại **Web application**,
   thêm Authorized redirect URI đúng bằng `GOOGLE_CALLBACK_URL`.
 - **SePay tự xác nhận thanh toán**: trong SePay tạo Webhook/API integration trỏ tới
