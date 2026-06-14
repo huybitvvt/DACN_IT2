@@ -1,34 +1,27 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { Code2, LogIn } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
-import { loginRequest } from '@/lib/authApi';
-import { apiUrl, getErrorMessage } from '@/lib/api';
+import { Link } from 'react-router-dom';
+import { Code2, Mail } from 'lucide-react';
+import { forgotPasswordRequest } from '@/lib/authApi';
+import { getErrorMessage } from '@/lib/api';
 import TextField from '@/components/ui/TextField';
 import Alert from '@/components/ui/Alert';
 
-export default function LoginPage() {
-  const { setUser } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [searchParams] = useSearchParams();
-  const from = (location.state as { from?: string } | null)?.from ?? '/';
-
+export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError('');
+    setNotice('');
     setSubmitting(true);
     try {
-      const user = await loginRequest({ email, password });
-      setUser(user);
-      navigate(from, { replace: true });
+      const message = await forgotPasswordRequest({ email });
+      setNotice(message);
     } catch (err) {
-      setError(getErrorMessage(err, 'Đăng nhập thất bại.'));
+      setError(getErrorMessage(err, 'Không gửi được link đặt lại mật khẩu.'));
     } finally {
       setSubmitting(false);
     }
@@ -46,18 +39,16 @@ export default function LoginPage() {
             <Code2 className="h-6 w-6" strokeWidth={2.5} />
           </span>
           <h1 className="mt-4 font-display text-2xl font-extrabold text-gray-900 dark:text-white">
-            Đăng nhập
+            Quên mật khẩu
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
-            Chào mừng bạn quay lại CodeLearn.
+            Nhận link đặt lại mật khẩu qua email.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 px-7 py-6" noValidate>
           {error && <Alert type="error">{error}</Alert>}
-          {searchParams.get('reset') === '1' && (
-            <Alert type="success">Mật khẩu đã được đặt lại. Bạn có thể đăng nhập.</Alert>
-          )}
+          {notice && <Alert type="success">{notice}</Alert>}
           <TextField
             id="email"
             label="Email"
@@ -68,42 +59,19 @@ export default function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-          <TextField
-            id="password"
-            label="Mật khẩu"
-            type="password"
-            autoComplete="current-password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <div className="-mt-2 text-right">
-            <Link to="/forgot-password" className="text-sm font-semibold text-brand-600 hover:underline dark:text-brand-400">
-              Quên mật khẩu?
-            </Link>
-          </div>
           <button
             type="submit"
             disabled={submitting}
             className="group flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 py-2.5 font-semibold text-white shadow-soft transition-all duration-300 ease-out-expo hover:-translate-y-0.5 hover:shadow-glowBrand disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
           >
-            <LogIn className="h-4 w-4" />
-            {submitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
+            <Mail className="h-4 w-4" />
+            {submitting ? 'Đang gửi link...' : 'Gửi link đặt lại'}
           </button>
 
-          <a
-            href={apiUrl('/auth/google')}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white py-2.5 font-semibold text-gray-700 transition-colors hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
-          >
-            <span className="font-bold text-red-500">G</span>
-            Tiếp tục với Google
-          </a>
-
           <p className="pt-1 text-center text-sm text-gray-600 dark:text-slate-400">
-            Chưa có tài khoản?{' '}
-            <Link to="/register" className="font-semibold text-brand-600 hover:underline dark:text-brand-400">
-              Đăng ký
+            Nhớ mật khẩu?{' '}
+            <Link to="/login" className="font-semibold text-brand-600 hover:underline dark:text-brand-400">
+              Đăng nhập
             </Link>
           </p>
         </form>

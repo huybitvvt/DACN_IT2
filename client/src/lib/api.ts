@@ -10,6 +10,11 @@ export const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+export function apiUrl(path: string): string {
+  const base = import.meta.env.VITE_API_URL ?? '/api';
+  return `${base.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
+}
+
 // Cấu trúc lỗi chuẩn từ backend.
 export interface ApiErrorBody {
   error: {

@@ -15,28 +15,35 @@ function escapeHtml(value: string) {
     .replace(/'/g, '&#039;');
 }
 
-function buildRegistrationEmail(params: {
+function buildButtonEmail(params: {
   displayName: string;
-  verifyUrl: string;
+  actionUrl: string;
+  subject: string;
+  intro: string;
+  buttonText: string;
+  fallbackText: string;
   expiresInMinutes: number;
 }) {
   const safeName = escapeHtml(params.displayName);
-  const safeVerifyUrl = escapeHtml(params.verifyUrl);
+  const safeActionUrl = escapeHtml(params.actionUrl);
+  const safeIntro = escapeHtml(params.intro);
+  const safeButtonText = escapeHtml(params.buttonText);
+  const safeFallbackText = escapeHtml(params.fallbackText);
 
   return {
-    subject: 'Xác thực tài khoản CodeLearn',
-    text: `Xin chào ${params.displayName}, bấm link sau để xác thực tài khoản CodeLearn: ${params.verifyUrl}. Link hết hạn sau ${params.expiresInMinutes} phút.`,
+    subject: params.subject,
+    text: `Xin chào ${params.displayName}, ${params.intro}: ${params.actionUrl}. Link hết hạn sau ${params.expiresInMinutes} phút.`,
     html: `
       <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827">
         <p>Xin chào ${safeName},</p>
-        <p>Bấm nút bên dưới để xác thực tài khoản CodeLearn của bạn:</p>
+        <p>${safeIntro}</p>
         <p style="margin:24px 0">
-          <a href="${safeVerifyUrl}" style="display:inline-block;background:#059669;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:8px;font-weight:700">
-            Xác thực tài khoản
+          <a href="${safeActionUrl}" style="display:inline-block;background:#059669;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:8px;font-weight:700">
+            ${safeButtonText}
           </a>
         </p>
-        <p>Nếu nút không hoạt động, hãy mở link này:</p>
-        <p><a href="${safeVerifyUrl}">${safeVerifyUrl}</a></p>
+        <p>${safeFallbackText}</p>
+        <p><a href="${safeActionUrl}">${safeActionUrl}</a></p>
         <p>Link sẽ hết hạn sau ${params.expiresInMinutes} phút. Nếu bạn không đăng ký tài khoản, vui lòng bỏ qua email này.</p>
       </div>
     `,
@@ -46,7 +53,11 @@ function buildRegistrationEmail(params: {
 async function sendViaSmtp(params: {
   to: string;
   displayName: string;
-  verifyUrl: string;
+  actionUrl: string;
+  subject: string;
+  intro: string;
+  buttonText: string;
+  fallbackText: string;
   expiresInMinutes: number;
 }) {
   const transporter = nodemailer.createTransport({
@@ -62,7 +73,7 @@ async function sendViaSmtp(params: {
     socketTimeout: 15_000,
   });
 
-  const message = buildRegistrationEmail(params);
+  const message = buildButtonEmail(params);
 
   try {
     await transporter.sendMail({
@@ -89,7 +100,16 @@ export async function sendRegistrationVerificationEmail(params: {
   expiresInMinutes: number;
 }) {
   if (isSmtpConfigured()) {
-    await sendViaSmtp(params);
+    await sendViaSmtp({
+      to: params.to,
+      displayName: params.displayName,
+      actionUrl: params.verifyUrl,
+      subject: 'Xác thực tài khoản CodeLearn',
+      intro: 'Bấm nút bên dưới để xác thực tài khoản CodeLearn của bạn',
+      buttonText: 'Xác thực tài khoản',
+      fallbackText: 'Nếu nút không hoạt động, hãy mở link này:',
+      expiresInMinutes: params.expiresInMinutes,
+    });
     return;
   }
 
@@ -98,4 +118,31 @@ export async function sendRegistrationVerificationEmail(params: {
   }
 
   console.info(`[email-dev] Link xác thực cho ${params.to}: ${params.verifyUrl}`);
+}
+
+export async function sendPasswordResetEmail(params: {
+  to: string;
+  displayName: string;
+  resetUrl: string;
+  expiresInMinutes: number;
+}) {
+  if (isSmtpConfigured()) {
+    await sendViaSmtp({
+      to: params.to,
+      displayName: params.displayName,
+      actionUrl: params.resetUrl,
+      subject: 'Đặt lại mật khẩu CodeLearn',
+      intro: 'Bấm nút bên dưới để đặt lại mật khẩu CodeLearn của bạn',
+      buttonText: 'Đặt lại mật khẩu',
+      fallbackText: 'Nếu nút không hoạt động, hãy mở link này:',
+      expiresInMinutes: params.expiresInMinutes,
+    });
+    return;
+  }
+
+  if (env.isProduction) {
+    throw AppError.internal('Chưa cấu hình SMTP để gửi email đặt lại mật khẩu.');
+  }
+
+  console.info(`[email-dev] Link đặt lại mật khẩu cho ${params.to}: ${params.resetUrl}`);
 }

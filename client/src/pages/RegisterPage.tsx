@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Code2, Mail, RefreshCw, UserPlus } from 'lucide-react';
 import { requestRegistrationCode } from '@/lib/authApi';
-import { getErrorMessage } from '@/lib/api';
+import { apiUrl, getErrorMessage } from '@/lib/api';
 import TextField from '@/components/ui/TextField';
 import Alert from '@/components/ui/Alert';
 
@@ -132,6 +132,13 @@ export default function RegisterPage() {
                 <Mail className="h-4 w-4" />
                 {submitting ? 'Đang gửi link...' : 'Gửi link xác thực'}
               </button>
+              <a
+                href={apiUrl('/auth/google')}
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white py-2.5 font-semibold text-gray-700 transition-colors hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+              >
+                <span className="font-bold text-red-500">G</span>
+                Đăng ký với Google
+              </a>
             </>
           ) : (
             <>

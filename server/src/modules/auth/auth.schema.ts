@@ -25,6 +25,22 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Vui lòng nhập mật khẩu.'),
 });
 
+export const forgotPasswordSchema = z.object({
+  email: z.string().trim().toLowerCase().email('Email không hợp lệ.'),
+});
+
+export const resetPasswordSchema = z.object({
+  email: z.string().trim().toLowerCase().email('Email không hợp lệ.'),
+  token: z
+    .string()
+    .trim()
+    .min(32, 'Link đặt lại mật khẩu không hợp lệ.')
+    .max(256, 'Link đặt lại mật khẩu không hợp lệ.'),
+  password: z.string().min(8, 'Mật khẩu phải có ít nhất 8 ký tự.').max(128),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type VerifyRegistrationInput = z.infer<typeof verifyRegistrationSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;

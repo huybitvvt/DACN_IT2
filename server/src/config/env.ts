@@ -47,6 +47,10 @@ export const env = {
   smtpPass: optional('SMTP_PASS'),
   smtpFrom: optional('SMTP_FROM', optional('SMTP_USER')),
 
+  googleClientId: optional('GOOGLE_CLIENT_ID'),
+  googleClientSecret: optional('GOOGLE_CLIENT_SECRET'),
+  googleCallbackUrl: optional('GOOGLE_CALLBACK_URL'),
+
   get isProduction() {
     return this.nodeEnv === 'production';
   },

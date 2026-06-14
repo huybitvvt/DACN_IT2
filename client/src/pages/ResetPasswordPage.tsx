@@ -1,20 +1,17 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { Code2, LogIn } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
-import { loginRequest } from '@/lib/authApi';
-import { apiUrl, getErrorMessage } from '@/lib/api';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Code2, KeyRound } from 'lucide-react';
+import { resetPasswordRequest } from '@/lib/authApi';
+import { getErrorMessage } from '@/lib/api';
 import TextField from '@/components/ui/TextField';
 import Alert from '@/components/ui/Alert';
 
-export default function LoginPage() {
-  const { setUser } = useAuth();
+export default function ResetPasswordPage() {
+  const [params] = useSearchParams();
   const navigate = useNavigate();
-  const location = useLocation();
-  const [searchParams] = useSearchParams();
-  const from = (location.state as { from?: string } | null)?.from ?? '/';
+  const email = params.get('email') ?? '';
+  const token = params.get('token') ?? '';
 
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -22,17 +19,22 @@ export default function LoginPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError('');
+    if (password.length < 8) {
+      setError('Mật khẩu phải có ít nhất 8 ký tự.');
+      return;
+    }
     setSubmitting(true);
     try {
-      const user = await loginRequest({ email, password });
-      setUser(user);
-      navigate(from, { replace: true });
+      await resetPasswordRequest({ email, token, password });
+      navigate('/login?reset=1', { replace: true });
     } catch (err) {
-      setError(getErrorMessage(err, 'Đăng nhập thất bại.'));
+      setError(getErrorMessage(err, 'Không đặt lại được mật khẩu.'));
     } finally {
       setSubmitting(false);
     }
   }
+
+  const invalidLink = !email || !token;
 
   return (
     <div className="relative mx-auto mt-6 max-w-md sm:mt-10">
@@ -46,64 +48,40 @@ export default function LoginPage() {
             <Code2 className="h-6 w-6" strokeWidth={2.5} />
           </span>
           <h1 className="mt-4 font-display text-2xl font-extrabold text-gray-900 dark:text-white">
-            Đăng nhập
+            Đặt lại mật khẩu
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
-            Chào mừng bạn quay lại CodeLearn.
+            Chọn mật khẩu mới cho tài khoản của bạn.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 px-7 py-6" noValidate>
+          {invalidLink && <Alert type="error">Link đặt lại mật khẩu không hợp lệ.</Alert>}
           {error && <Alert type="error">{error}</Alert>}
-          {searchParams.get('reset') === '1' && (
-            <Alert type="success">Mật khẩu đã được đặt lại. Bạn có thể đăng nhập.</Alert>
-          )}
-          <TextField
-            id="email"
-            label="Email"
-            type="email"
-            autoComplete="email"
-            placeholder="ban@email.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
+          <TextField id="email" label="Email" value={email} disabled />
           <TextField
             id="password"
-            label="Mật khẩu"
+            label="Mật khẩu mới"
             type="password"
-            autoComplete="current-password"
+            autoComplete="new-password"
             placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            disabled={invalidLink}
             required
           />
-          <div className="-mt-2 text-right">
-            <Link to="/forgot-password" className="text-sm font-semibold text-brand-600 hover:underline dark:text-brand-400">
-              Quên mật khẩu?
-            </Link>
-          </div>
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || invalidLink}
             className="group flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 py-2.5 font-semibold text-white shadow-soft transition-all duration-300 ease-out-expo hover:-translate-y-0.5 hover:shadow-glowBrand disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
           >
-            <LogIn className="h-4 w-4" />
-            {submitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
+            <KeyRound className="h-4 w-4" />
+            {submitting ? 'Đang lưu...' : 'Đặt lại mật khẩu'}
           </button>
 
-          <a
-            href={apiUrl('/auth/google')}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white py-2.5 font-semibold text-gray-700 transition-colors hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
-          >
-            <span className="font-bold text-red-500">G</span>
-            Tiếp tục với Google
-          </a>
-
           <p className="pt-1 text-center text-sm text-gray-600 dark:text-slate-400">
-            Chưa có tài khoản?{' '}
-            <Link to="/register" className="font-semibold text-brand-600 hover:underline dark:text-brand-400">
-              Đăng ký
+            <Link to="/login" className="font-semibold text-brand-600 hover:underline dark:text-brand-400">
+              Quay lại đăng nhập
             </Link>
           </p>
         </form>
