@@ -57,6 +57,7 @@ Render hỗ trợ Node + PostgreSQL miễn phí, **không cần thẻ tín dụn
 | `VIETQR_ACCOUNT_NO` | số tài khoản nhận tiền |
 | `VIETQR_ACCOUNT_NAME` | tên chủ tài khoản không dấu |
 | `VIETQR_TEMPLATE` | `compact2` |
+| `SEPAY_WEBHOOK_API_KEY` | chuỗi bí mật tự đặt, dùng cho webhook SePay |
 | `GROQ_API_KEY` | khoá Groq của bạn |
 | `GROQ_MODEL` | `llama-3.3-70b-versatile` |
 | `ENABLE_SEMANTIC_RAG` | `false` |
@@ -102,6 +103,11 @@ xong là website đã có sẵn 4 khoá học + tài khoản admin.
   hãy nâng Web Service lên gói trả phí hoặc chạy trên môi trường cho phép outbound SMTP.
 - **Google OAuth**: trong Google Cloud Console tạo OAuth Client loại **Web application**,
   thêm Authorized redirect URI đúng bằng `GOOGLE_CALLBACK_URL`.
+- **SePay tự xác nhận thanh toán**: trong SePay tạo Webhook/API integration trỏ tới
+  `https://dacn-it2.onrender.com/api/payments/sepay/webhook`, chọn xác thực **API Key**
+  và nhập đúng giá trị `SEPAY_WEBHOOK_API_KEY`. Nội dung chuyển khoản của app luôn có
+  mã dạng `CL...`; SePay cần đọc được mã này trong trường `code` hoặc gửi nguyên nội dung
+  chuyển khoản để backend tự tách mã.
 
 ---
 

@@ -1,4 +1,6 @@
 import { randomBytes } from 'node:crypto';
+import { Prisma } from '@prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { env } from '../../config/env.js';
 import { prisma } from '../../db/prisma.js';
 import { AppError } from '../../utils/AppError.js';
@@ -19,6 +21,28 @@ function createVietQrUrl(params: { amountVnd: number; paymentCode: string }) {
   url.searchParams.set('accountName', env.vietqrAccountName);
   return url.toString();
 }
+
+function extractPaymentCode(payload: SepayWebhookPayload) {
+  const directCode = payload.code?.trim();
+  if (directCode) return directCode.toUpperCase();
+
+  const rawText = `${payload.content ?? ''} ${payload.description ?? ''}`;
+  const match = rawText.match(/\bCL[A-Z0-9]{6,}\b/i);
+  return match?.[0].toUpperCase() ?? null;
+}
+
+function isDuplicateWebhookError(error: unknown) {
+  return error instanceof PrismaClientKnownRequestError && error.code === 'P2002';
+}
+
+export type SepayWebhookPayload = {
+  id: number;
+  transferType: string;
+  transferAmount: number;
+  code?: string | null;
+  content?: string | null;
+  description?: string | null;
+};
 
 export async function createCourseCheckout(userId: string, slug: string) {
   const course = await prisma.course.findUnique({
@@ -70,6 +94,40 @@ export async function confirmCoursePaymentDemo(userId: string, slug: string) {
     where: { id: purchase.id },
     data: { status: 'PAID', paidAt: new Date() },
   });
+
+  return { success: true };
+}
+
+export async function handleSepayWebhook(payload: SepayWebhookPayload) {
+  const paymentCode = extractPaymentCode(payload);
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.sepayWebhookEvent.create({
+        data: {
+          sepayId: payload.id,
+          paymentCode,
+          payload: payload as Prisma.InputJsonValue,
+        },
+      });
+
+      if (payload.transferType !== 'in' || !paymentCode) return;
+
+      const purchase = await tx.coursePurchase.findUnique({
+        where: { paymentCode },
+        select: { id: true, amountVnd: true, status: true },
+      });
+      if (!purchase || purchase.status === 'PAID') return;
+      if (payload.transferAmount < purchase.amountVnd) return;
+
+      await tx.coursePurchase.update({
+        where: { id: purchase.id },
+        data: { status: 'PAID', paidAt: new Date() },
+      });
+    });
+  } catch (error) {
+    if (!isDuplicateWebhookError(error)) throw error;
+  }
 
   return { success: true };
 }

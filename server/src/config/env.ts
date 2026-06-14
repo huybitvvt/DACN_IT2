@@ -55,6 +55,7 @@ export const env = {
   vietqrAccountNo: optional('VIETQR_ACCOUNT_NO'),
   vietqrAccountName: optional('VIETQR_ACCOUNT_NAME'),
   vietqrTemplate: optional('VIETQR_TEMPLATE', 'compact2'),
+  sepayWebhookApiKey: optional('SEPAY_WEBHOOK_API_KEY'),
 
   get isProduction() {
     return this.nodeEnv === 'production';
