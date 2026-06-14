@@ -80,3 +80,15 @@ export const deleteQuiz = asyncHandler(async (req: Request, res: Response) => {
 export const listUsers = asyncHandler(async (_req, res: Response) => {
   res.json({ users: await svc.listUsers() });
 });
+
+// ---- Purchases ----
+export const listPurchases = asyncHandler(async (req: Request, res: Response) => {
+  const status = z.enum(['PENDING', 'PAID']).optional().parse(req.query.status || undefined);
+  const q = z.string().optional().parse(req.query.q);
+  res.json({ purchases: await svc.listPurchases({ status, q }) });
+});
+
+export const markPurchasePaid = asyncHandler(async (req: Request, res: Response) => {
+  const purchase = await svc.markPurchasePaid(idParam(req));
+  res.json({ purchase });
+});

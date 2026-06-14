@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { CheckCircle2, Copy, Loader2, QrCode } from 'lucide-react';
+import { CheckCircle2, Copy, Loader2, QrCode, RefreshCw } from 'lucide-react';
 import { createCourseCheckout, getCourseCheckoutStatus, type CourseCheckout } from '@/lib/paymentApi';
 import { getErrorMessage } from '@/lib/api';
 import { formatVnd } from '@/lib/format';
@@ -13,8 +13,28 @@ export default function CheckoutPage() {
   const [checkout, setCheckout] = useState<CourseCheckout | null>(null);
   const [loading, setLoading] = useState(true);
   const [paid, setPaid] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [renewing, setRenewing] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+
+  async function refreshStatus(options: { manual?: boolean } = {}) {
+    if (!slug) return;
+    if (options.manual) setChecking(true);
+    setError('');
+    try {
+      const purchase = await getCourseCheckoutStatus(slug);
+      setCheckout((current) => (current ? { ...current, purchase } : current));
+      if (purchase.status === 'PAID') {
+        setPaid(true);
+        window.setTimeout(() => navigate(`/courses/${slug}`, { replace: true }), 1600);
+      }
+    } catch (err) {
+      setError(getErrorMessage(err, 'Không kiểm tra được trạng thái thanh toán.'));
+    } finally {
+      if (options.manual) setChecking(false);
+    }
+  }
 
   useEffect(() => {
     if (!slug) return;
@@ -32,19 +52,8 @@ export default function CheckoutPage() {
     if (!slug || !checkout || paid) return;
 
     let stopped = false;
-    const pollStatus = async () => {
-      try {
-        const purchase = await getCourseCheckoutStatus(slug);
-        if (stopped) return;
-
-        setCheckout((current) => (current ? { ...current, purchase } : current));
-        if (purchase.status === 'PAID') {
-          setPaid(true);
-          window.setTimeout(() => navigate(`/courses/${slug}`, { replace: true }), 1600);
-        }
-      } catch (err) {
-        if (!stopped) setError(getErrorMessage(err, 'Không kiểm tra được trạng thái thanh toán.'));
-      }
+    const pollStatus = () => {
+      if (!stopped) void refreshStatus();
     };
 
     void pollStatus();
@@ -53,13 +62,33 @@ export default function CheckoutPage() {
       stopped = true;
       window.clearInterval(intervalId);
     };
-  }, [checkout?.purchase.id, navigate, paid, slug]);
+  }, [checkout?.purchase.id, paid, slug]);
 
   async function handleCopy() {
     if (!checkout) return;
     await navigator.clipboard.writeText(checkout.purchase.paymentCode);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1600);
+  }
+
+  async function handleRenewCheckout() {
+    if (!slug) return;
+    setRenewing(true);
+    setError('');
+    try {
+      const nextCheckout = await createCourseCheckout(slug);
+      setCheckout(nextCheckout);
+      setPaid(nextCheckout.purchase.status === 'PAID');
+    } catch (err) {
+      setError(getErrorMessage(err, 'Không tạo được mã thanh toán mới.'));
+    } finally {
+      setRenewing(false);
+    }
+  }
+
+  function formatDate(value: string | null) {
+    if (!value) return '';
+    return new Date(value).toLocaleString('vi-VN');
   }
 
   if (loading) return <Spinner />;
@@ -129,10 +158,39 @@ export default function CheckoutPage() {
 
             {paid ? (
               <Alert type="success">Thanh toán đã hoàn tất. Đang mở khoá học...</Alert>
+            ) : checkout.purchase.isExpired ? (
+              <Alert type="error">
+                Mã thanh toán đã quá 30 phút. Hãy tạo mã mới trước khi chuyển khoản để tránh nhầm đối soát.
+              </Alert>
             ) : (
               <div className="flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-200">
                 <Loader2 className="h-5 w-5 shrink-0 animate-spin" />
-                <span>Đang chờ SePay xác nhận chuyển khoản. Vui lòng giữ nguyên nội dung thanh toán.</span>
+                <span>
+                  Đang chờ SePay xác nhận chuyển khoản. Mã có hiệu lực đến{' '}
+                  <strong>{formatDate(checkout.purchase.pendingExpiresAt)}</strong>.
+                </span>
+              </div>
+            )}
+
+            {!paid && (
+              <div className="grid gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  disabled={checking}
+                  onClick={() => void refreshStatus({ manual: true })}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-brand-200 px-4 py-2.5 text-sm font-semibold text-brand-700 transition-colors hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-brand-800 dark:text-brand-300 dark:hover:bg-brand-950/40"
+                >
+                  <RefreshCw className={`h-4 w-4 ${checking ? 'animate-spin' : ''}`} />
+                  {checking ? 'Đang kiểm tra...' : 'Tôi đã chuyển khoản'}
+                </button>
+                <button
+                  type="button"
+                  disabled={renewing}
+                  onClick={() => void handleRenewCheckout()}
+                  className="inline-flex items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-soft transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+                >
+                  {renewing ? 'Đang tạo mã...' : checkout.purchase.isExpired ? 'Tạo mã mới' : 'Làm mới mã QR'}
+                </button>
               </div>
             )}
           </div>

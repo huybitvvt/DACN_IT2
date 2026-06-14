@@ -10,6 +10,7 @@ import {
   Flame,
   Shield,
   User as UserIcon,
+  ReceiptText,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -165,6 +166,15 @@ export default function Header() {
                       <LayoutDashboard className="h-4 w-4" />
                       Bảng điều khiển
                     </Link>
+                    <Link
+                      to="/purchases"
+                      role="menuitem"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-300 transition-colors hover:bg-white/5 hover:text-white"
+                    >
+                      <ReceiptText className="h-4 w-4" />
+                      Lịch sử mua
+                    </Link>
                     {user.role === 'ADMIN' && (
                       <Link
                         to="/admin"
@@ -267,6 +277,15 @@ export default function Header() {
                 className="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 transition-colors hover:bg-white/10 hover:text-white"
               >
                 Quản trị
+              </NavLink>
+            )}
+            {user && (
+              <NavLink
+                to="/purchases"
+                onClick={() => setMenuOpen(false)}
+                className="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 transition-colors hover:bg-white/10 hover:text-white"
+              >
+                Lịch sử mua
               </NavLink>
             )}
           </div>

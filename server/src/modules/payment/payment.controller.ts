@@ -8,6 +8,7 @@ import {
   getCourseCheckoutStatus,
   handleSepayPaymentGatewayIpn,
   handleSepayWebhook,
+  listUserPurchases,
 } from './payment.service.js';
 
 const slugSchema = z.string().min(1);
@@ -51,6 +52,12 @@ export const checkoutStatus = asyncHandler(async (req: Request, res: Response) =
   const slug = slugSchema.parse(req.params.slug);
   const result = await getCourseCheckoutStatus(req.user.sub, slug);
   res.json(result);
+});
+
+export const purchaseHistory = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw AppError.unauthorized();
+  const purchases = await listUserPurchases(req.user.sub);
+  res.json({ purchases });
 });
 
 export const sepayWebhook = asyncHandler(async (req: Request, res: Response) => {

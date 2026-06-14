@@ -35,4 +35,8 @@ router.delete('/quizzes/:id', c.deleteQuiz);
 // Users
 router.get('/users', c.listUsers);
 
+// Purchases
+router.get('/purchases', c.listPurchases);
+router.post('/purchases/:id/mark-paid', c.markPurchasePaid);
+
 export default router;

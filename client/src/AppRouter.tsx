@@ -18,6 +18,7 @@ import RoadmapPage from '@/pages/RoadmapPage';
 import CertificatePage from '@/pages/CertificatePage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import CheckoutPage from '@/pages/CheckoutPage';
+import PurchaseHistoryPage from '@/pages/PurchaseHistoryPage';
 
 // Trang dùng CodeMirror được tải động để không phình bundle chính.
 const ExercisePage = lazy(() => import('@/pages/ExercisePage'));
@@ -29,6 +30,7 @@ const AdminCourses = lazy(() => import('@/pages/admin/AdminCourses'));
 const AdminLessons = lazy(() => import('@/pages/admin/AdminLessons'));
 const AdminExercises = lazy(() => import('@/pages/admin/AdminExercises'));
 const AdminUsers = lazy(() => import('@/pages/admin/AdminUsers'));
+const AdminPurchases = lazy(() => import('@/pages/admin/AdminPurchases'));
 
 function Lazy({ children }: { children: React.ReactNode }) {
   return <Suspense fallback={<div className="py-12 text-center text-gray-500">Đang tải...</div>}>{children}</Suspense>;
@@ -105,6 +107,14 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: 'purchases',
+        element: (
+          <ProtectedRoute>
+            <PurchaseHistoryPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: 'roadmap/:slug',
         element: (
           <ProtectedRoute>
@@ -135,6 +145,7 @@ const router = createBrowserRouter([
           { path: 'lessons', element: <Lazy><AdminLessons /></Lazy> },
           { path: 'exercises', element: <Lazy><AdminExercises /></Lazy> },
           { path: 'users', element: <Lazy><AdminUsers /></Lazy> },
+          { path: 'purchases', element: <Lazy><AdminPurchases /></Lazy> },
         ],
       },
       { path: '*', element: <NotFoundPage /> },

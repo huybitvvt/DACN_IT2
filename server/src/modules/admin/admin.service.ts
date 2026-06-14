@@ -150,6 +150,45 @@ export const listUsers = () =>
     orderBy: { createdAt: 'desc' },
   });
 
+export async function listPurchases(params: { status?: 'PENDING' | 'PAID'; q?: string }) {
+  const q = params.q?.trim();
+  return prisma.coursePurchase.findMany({
+    where: {
+      status: params.status,
+      ...(q
+        ? {
+            OR: [
+              { paymentCode: { contains: q, mode: 'insensitive' } },
+              { user: { email: { contains: q, mode: 'insensitive' } } },
+              { user: { displayName: { contains: q, mode: 'insensitive' } } },
+              { course: { title: { contains: q, mode: 'insensitive' } } },
+              { course: { slug: { contains: q, mode: 'insensitive' } } },
+            ],
+          }
+        : {}),
+    },
+    include: {
+      user: { select: { id: true, email: true, displayName: true } },
+      course: { select: { id: true, slug: true, title: true, language: true } },
+    },
+    orderBy: { updatedAt: 'desc' },
+    take: 100,
+  });
+}
+
+export async function markPurchasePaid(id: string) {
+  const purchase = await ensureExists(
+    prisma.coursePurchase.findUnique({ where: { id } }),
+    'đơn mua khoá học',
+  );
+  if (purchase.status === 'PAID') return purchase;
+
+  return prisma.coursePurchase.update({
+    where: { id },
+    data: { status: 'PAID', paidAt: new Date() },
+  });
+}
+
 // Helper: ném 404 nếu bản ghi không tồn tại.
 async function ensureExists<T>(promise: Promise<T | null>, label: string): Promise<T> {
   const found = await promise;

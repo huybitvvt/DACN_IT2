@@ -1,5 +1,6 @@
 import { api } from './api';
 import type { ProgrammingLanguage, Role } from '@/types';
+import type { PurchaseStatus } from './paymentApi';
 
 export interface AdminCourse {
   id: string;
@@ -45,6 +46,27 @@ export interface AdminUser {
   createdAt: string;
 }
 
+export interface AdminPurchase {
+  id: string;
+  status: PurchaseStatus;
+  amountVnd: number;
+  paymentCode: string;
+  paidAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  user: {
+    id: string;
+    email: string;
+    displayName: string;
+  };
+  course: {
+    id: string;
+    slug: string;
+    title: string;
+    language: ProgrammingLanguage;
+  };
+}
+
 // ---- Courses ----
 export const adminListCourses = () =>
   api.get<{ courses: AdminCourse[] }>('/admin/courses').then((r) => r.data.courses);
@@ -82,3 +104,12 @@ export const adminDeleteExercise = (id: string) =>
 // ---- Users ----
 export const adminListUsers = () =>
   api.get<{ users: AdminUser[] }>('/admin/users').then((r) => r.data.users);
+
+// ---- Purchases ----
+export const adminListPurchases = (params: { status?: PurchaseStatus | ''; q?: string }) =>
+  api
+    .get<{ purchases: AdminPurchase[] }>('/admin/purchases', { params })
+    .then((r) => r.data.purchases);
+
+export const adminMarkPurchasePaid = (id: string) =>
+  api.post<{ purchase: AdminPurchase }>(`/admin/purchases/${id}/mark-paid`).then((r) => r.data.purchase);

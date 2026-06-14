@@ -5,8 +5,35 @@ import { env } from '../../config/env.js';
 import { prisma } from '../../db/prisma.js';
 import { AppError } from '../../utils/AppError.js';
 
+const PENDING_CHECKOUT_EXPIRES_MINUTES = 30;
+
 function createPaymentCode() {
   return `CL${randomBytes(5).toString('hex').toUpperCase()}`;
+}
+
+function getPendingCheckoutExpiresAt(updatedAt: Date) {
+  return new Date(updatedAt.getTime() + PENDING_CHECKOUT_EXPIRES_MINUTES * 60 * 1000);
+}
+
+function isPendingCheckoutExpired(updatedAt: Date) {
+  return getPendingCheckoutExpiresAt(updatedAt).getTime() < Date.now();
+}
+
+function toCheckoutPurchase(purchase: {
+  id: string;
+  status: 'PENDING' | 'PAID';
+  amountVnd: number;
+  paymentCode: string;
+  paidAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}) {
+  return {
+    ...purchase,
+    pendingExpiresAt:
+      purchase.status === 'PENDING' ? getPendingCheckoutExpiresAt(purchase.updatedAt).toISOString() : null,
+    isExpired: purchase.status === 'PENDING' && isPendingCheckoutExpired(purchase.updatedAt),
+  };
 }
 
 function createVietQrUrl(params: { amountVnd: number; paymentCode: string }) {
@@ -72,7 +99,15 @@ export async function createCourseCheckout(userId: string, slug: string) {
   });
 
   const purchase =
-    existing && existing.status === 'PENDING' && existing.amountVnd !== course.priceVnd
+    existing && existing.status === 'PENDING' && isPendingCheckoutExpired(existing.updatedAt)
+      ? await prisma.coursePurchase.update({
+          where: { id: existing.id },
+          data: {
+            amountVnd: course.priceVnd,
+            paymentCode: createPaymentCode(),
+          },
+        })
+      : existing && existing.status === 'PENDING' && existing.amountVnd !== course.priceVnd
       ? await prisma.coursePurchase.update({
           where: { id: existing.id },
           data: { amountVnd: course.priceVnd },
@@ -89,7 +124,7 @@ export async function createCourseCheckout(userId: string, slug: string) {
 
   return {
     course,
-    purchase,
+    purchase: toCheckoutPurchase(purchase),
     qrUrl: createVietQrUrl({
       amountVnd: purchase.amountVnd,
       paymentCode: purchase.paymentCode,
@@ -108,11 +143,33 @@ export async function getCourseCheckoutStatus(userId: string, slug: string) {
 
   const purchase = await prisma.coursePurchase.findUnique({
     where: { userId_courseId: { userId, courseId: course.id } },
-    select: { id: true, status: true, amountVnd: true, paymentCode: true, paidAt: true },
   });
   if (!purchase) throw AppError.badRequest('Bạn cần tạo mã thanh toán trước.');
 
-  return { purchase };
+  return { purchase: toCheckoutPurchase(purchase) };
+}
+
+export async function listUserPurchases(userId: string) {
+  const purchases = await prisma.coursePurchase.findMany({
+    where: { userId },
+    orderBy: { updatedAt: 'desc' },
+    include: {
+      course: {
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          language: true,
+          priceVnd: true,
+        },
+      },
+    },
+  });
+
+  return purchases.map((purchase) => ({
+    ...toCheckoutPurchase(purchase),
+    course: purchase.course,
+  }));
 }
 
 function parseVndAmount(value: string) {
