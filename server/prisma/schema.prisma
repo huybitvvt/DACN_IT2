@@ -175,6 +175,16 @@ model SepayWebhookEvent {
   @@index([paymentCode])
 }
 
+model SepayPaymentGatewayIpnEvent {
+  id            String   @id @default(cuid())
+  transactionId String   @unique
+  invoiceNumber String?
+  payload       Json
+  createdAt     DateTime @default(now())
+
+  @@index([invoiceNumber])
+}
+
 model Lesson {
   id              String   @id @default(cuid())
   courseId        String

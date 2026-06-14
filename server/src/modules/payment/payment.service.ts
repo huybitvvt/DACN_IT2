@@ -44,6 +44,22 @@ export type SepayWebhookPayload = {
   description?: string | null;
 };
 
+export type SepayPaymentGatewayIpnPayload = {
+  timestamp: number;
+  notification_type: string;
+  order: {
+    order_status: string;
+    order_amount: string;
+    order_invoice_number: string;
+  };
+  transaction: {
+    id?: string | null;
+    transaction_id: string;
+    transaction_status: string;
+    transaction_amount: string;
+  };
+};
+
 export async function createCourseCheckout(userId: string, slug: string) {
   const course = await prisma.course.findUnique({
     where: { slug },
@@ -98,6 +114,11 @@ export async function confirmCoursePaymentDemo(userId: string, slug: string) {
   return { success: true };
 }
 
+function parseVndAmount(value: string) {
+  const amount = Number(value);
+  return Number.isFinite(amount) ? Math.floor(amount) : 0;
+}
+
 export async function handleSepayWebhook(payload: SepayWebhookPayload) {
   const paymentCode = extractPaymentCode(payload);
 
@@ -119,6 +140,46 @@ export async function handleSepayWebhook(payload: SepayWebhookPayload) {
       });
       if (!purchase || purchase.status === 'PAID') return;
       if (payload.transferAmount < purchase.amountVnd) return;
+
+      await tx.coursePurchase.update({
+        where: { id: purchase.id },
+        data: { status: 'PAID', paidAt: new Date() },
+      });
+    });
+  } catch (error) {
+    if (!isDuplicateWebhookError(error)) throw error;
+  }
+
+  return { success: true };
+}
+
+export async function handleSepayPaymentGatewayIpn(payload: SepayPaymentGatewayIpnPayload) {
+  const invoiceNumber = payload.order.order_invoice_number.trim().toUpperCase();
+  const transactionId = payload.transaction.transaction_id;
+  const paidAmount = parseVndAmount(payload.transaction.transaction_amount || payload.order.order_amount);
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.sepayPaymentGatewayIpnEvent.create({
+        data: {
+          transactionId,
+          invoiceNumber,
+          payload: payload as Prisma.InputJsonValue,
+        },
+      });
+
+      const isPaid =
+        payload.notification_type === 'ORDER_PAID' &&
+        payload.order.order_status === 'CAPTURED' &&
+        payload.transaction.transaction_status === 'APPROVED';
+      if (!isPaid || !invoiceNumber) return;
+
+      const purchase = await tx.coursePurchase.findUnique({
+        where: { paymentCode: invoiceNumber },
+        select: { id: true, amountVnd: true, status: true },
+      });
+      if (!purchase || purchase.status === 'PAID') return;
+      if (paidAmount < purchase.amountVnd) return;
 
       await tx.coursePurchase.update({
         where: { id: purchase.id },

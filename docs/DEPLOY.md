@@ -58,6 +58,9 @@ Render hỗ trợ Node + PostgreSQL miễn phí, **không cần thẻ tín dụn
 | `VIETQR_ACCOUNT_NAME` | tên chủ tài khoản không dấu |
 | `VIETQR_TEMPLATE` | `compact2` |
 | `SEPAY_WEBHOOK_API_KEY` | chuỗi bí mật tự đặt, dùng cho webhook SePay |
+| `SEPAY_PG_MERCHANT_ID` | Merchant ID của SePay Payment Gateway |
+| `SEPAY_PG_SECRET_KEY` | Secret Key của SePay Payment Gateway/IPN |
+| `SEPAY_PG_ENV` | `sandbox` khi test, `production` khi chạy thật |
 | `GROQ_API_KEY` | khoá Groq của bạn |
 | `GROQ_MODEL` | `llama-3.3-70b-versatile` |
 | `ENABLE_SEMANTIC_RAG` | `false` |
@@ -108,6 +111,10 @@ xong là website đã có sẵn 4 khoá học + tài khoản admin.
   và nhập đúng giá trị `SEPAY_WEBHOOK_API_KEY`. Nội dung chuyển khoản của app luôn có
   mã dạng `CL...`; SePay cần đọc được mã này trong trường `code` hoặc gửi nguyên nội dung
   chuyển khoản để backend tự tách mã.
+- **SePay Payment Gateway/IPN**: nếu dùng màn hình tích hợp Payment Gateway của SePay,
+  điền IPN URL là `https://dacn-it2.onrender.com/api/payments/sepay/ipn`. Backend sẽ xác
+  thực header `X-Secret-Key` bằng biến `SEPAY_PG_SECRET_KEY` và tự mở khoá khi invoice
+  number trùng mã thanh toán `CL...`.
 
 ---
 
