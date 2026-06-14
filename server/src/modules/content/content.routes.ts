@@ -1,12 +1,12 @@
 import { Router } from 'express';
+import { requireAuth } from '../../middleware/auth.js';
 import { getCourse, getCourses, getLesson, search } from './content.controller.js';
 
-// Các route nội dung công khai (khách cũng xem được - Yêu cầu 2.5).
 const router = Router();
 
-router.get('/courses', getCourses);
-router.get('/courses/:slug', getCourse);
-router.get('/lessons/:id', getLesson);
+router.get('/courses', requireAuth, getCourses);
+router.get('/courses/:slug', requireAuth, getCourse);
+router.get('/lessons/:id', requireAuth, getLesson);
 router.get('/search', search);
 
 export default router;

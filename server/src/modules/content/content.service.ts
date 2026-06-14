@@ -2,8 +2,8 @@ import { prisma } from '../../db/prisma.js';
 import { AppError } from '../../utils/AppError.js';
 
 // Danh sách khoá học, sắp theo thứ tự hiển thị.
-export async function listCourses() {
-  return prisma.course.findMany({
+export async function listCourses(userId: string) {
+  const courses = await prisma.course.findMany({
     orderBy: { order: 'asc' },
     select: {
       id: true,
@@ -11,13 +11,24 @@ export async function listCourses() {
       title: true,
       language: true,
       description: true,
+      priceVnd: true,
       order: true,
+      purchases: {
+        where: { userId },
+        select: { status: true },
+        take: 1,
+      },
     },
   });
+  return courses.map(({ purchases, ...course }) => ({
+    ...course,
+    purchaseStatus: purchases[0]?.status ?? null,
+    isPurchased: purchases[0]?.status === 'PAID',
+  }));
 }
 
 // Chi tiết một khoá theo slug, kèm mục lục bài học (không kèm nội dung dài).
-export async function getCourseBySlug(slug: string) {
+export async function getCourseBySlug(slug: string, userId: string) {
   const course = await prisma.course.findUnique({
     where: { slug },
     include: {
@@ -25,16 +36,29 @@ export async function getCourseBySlug(slug: string) {
         orderBy: { order: 'asc' },
         select: { id: true, title: true, order: true, isPublic: true },
       },
+      purchases: {
+        where: { userId },
+        select: { status: true },
+        take: 1,
+      },
     },
   });
   if (!course) {
     throw AppError.notFound('Không tìm thấy khoá học.');
   }
-  return course;
+  const purchaseStatus = course.purchases[0]?.status ?? null;
+  const rest = Object.fromEntries(
+    Object.entries(course).filter(([key]) => key !== 'purchases'),
+  ) as Omit<typeof course, 'purchases'>;
+  return {
+    ...rest,
+    purchaseStatus,
+    isPurchased: purchaseStatus === 'PAID',
+  };
 }
 
 // Chi tiết một bài học kèm ví dụ code và điều hướng trước/sau.
-export async function getLessonById(id: string) {
+export async function getLessonById(id: string, userId: string) {
   const lesson = await prisma.lesson.findUnique({
     where: { id },
     include: {
@@ -49,6 +73,14 @@ export async function getLessonById(id: string) {
   });
   if (!lesson) {
     throw AppError.notFound('Không tìm thấy bài học.');
+  }
+
+  const purchase = await prisma.coursePurchase.findUnique({
+    where: { userId_courseId: { userId, courseId: lesson.courseId } },
+    select: { status: true },
+  });
+  if (purchase?.status !== 'PAID') {
+    throw AppError.forbidden('Bạn cần mua khoá học để xem bài học.');
   }
 
   // Tìm bài trước và bài kế tiếp trong cùng khoá (theo order).

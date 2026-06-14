@@ -10,6 +10,8 @@ export interface LessonSummary {
 
 export interface CourseWithLessons extends Course {
   lessons: LessonSummary[];
+  purchaseStatus: 'PENDING' | 'PAID' | null;
+  isPurchased: boolean;
 }
 
 export interface Example {

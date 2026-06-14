@@ -51,6 +51,11 @@ export const env = {
   googleClientSecret: optional('GOOGLE_CLIENT_SECRET'),
   googleCallbackUrl: optional('GOOGLE_CALLBACK_URL'),
 
+  vietqrBankId: optional('VIETQR_BANK_ID'),
+  vietqrAccountNo: optional('VIETQR_ACCOUNT_NO'),
+  vietqrAccountName: optional('VIETQR_ACCOUNT_NAME'),
+  vietqrTemplate: optional('VIETQR_TEMPLATE', 'compact2'),
+
   get isProduction() {
     return this.nodeEnv === 'production';
   },

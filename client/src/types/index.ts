@@ -18,7 +18,10 @@ export interface Course {
   title: string;
   language: ProgrammingLanguage;
   description: string;
+  priceVnd: number;
   order: number;
+  purchaseStatus?: 'PENDING' | 'PAID' | null;
+  isPurchased?: boolean;
 }
 
 export interface Lesson {

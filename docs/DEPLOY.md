@@ -53,6 +53,10 @@ Render hỗ trợ Node + PostgreSQL miễn phí, **không cần thẻ tín dụn
 | `GOOGLE_CLIENT_ID` | OAuth Client ID từ Google Cloud |
 | `GOOGLE_CLIENT_SECRET` | OAuth Client Secret từ Google Cloud |
 | `GOOGLE_CALLBACK_URL` | `https://dacn-it2.onrender.com/api/auth/google/callback` |
+| `VIETQR_BANK_ID` | mã ngân hàng VietQR, vd `MB`, `VCB`, `TCB` |
+| `VIETQR_ACCOUNT_NO` | số tài khoản nhận tiền |
+| `VIETQR_ACCOUNT_NAME` | tên chủ tài khoản không dấu |
+| `VIETQR_TEMPLATE` | `compact2` |
 | `GROQ_API_KEY` | khoá Groq của bạn |
 | `GROQ_MODEL` | `llama-3.3-70b-versatile` |
 | `ENABLE_SEMANTIC_RAG` | `false` |

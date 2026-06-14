@@ -7,6 +7,7 @@ import Spinner from '@/components/ui/Spinner';
 import Alert from '@/components/ui/Alert';
 import LanguageBadge from '@/components/LanguageBadge';
 import SearchBar from '@/components/SearchBar';
+import { formatVnd } from '@/lib/format';
 
 export default function CoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -44,6 +45,14 @@ export default function CoursesPage() {
                 <LanguageBadge language={course.language} />
               </div>
               <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{course.description}</p>
+              <div className="mt-4 flex items-center justify-between text-sm">
+                <span className="font-bold text-brand-700 dark:text-brand-300">
+                  {formatVnd(course.priceVnd)}
+                </span>
+                <span className="rounded-full bg-gray-100 px-2.5 py-1 font-medium text-gray-600 dark:bg-slate-700 dark:text-slate-300">
+                  {course.isPurchased ? 'Đã mua' : course.purchaseStatus === 'PENDING' ? 'Chờ thanh toán' : 'Chưa mua'}
+                </span>
+              </div>
             </Link>
           ))}
         </div>

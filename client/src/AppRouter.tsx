@@ -17,6 +17,7 @@ import LeaderboardPage from '@/pages/LeaderboardPage';
 import RoadmapPage from '@/pages/RoadmapPage';
 import CertificatePage from '@/pages/CertificatePage';
 import NotFoundPage from '@/pages/NotFoundPage';
+import CheckoutPage from '@/pages/CheckoutPage';
 
 // Trang dùng CodeMirror được tải động để không phình bundle chính.
 const ExercisePage = lazy(() => import('@/pages/ExercisePage'));
@@ -41,11 +42,54 @@ const router = createBrowserRouter([
     element: <Layout />,
     children: [
       { index: true, element: <HomePage /> },
-      { path: 'courses', element: <CoursesPage /> },
-      { path: 'courses/:slug', element: <CourseDetailPage /> },
-      { path: 'lessons/:id', element: <LessonPage /> },
-      { path: 'lessons/:id/quiz', element: <QuizPage /> },
-      { path: 'exercises/:id', element: <Lazy><ExercisePage /></Lazy> },
+      {
+        path: 'courses',
+        element: (
+          <ProtectedRoute>
+            <CoursesPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'courses/:slug',
+        element: (
+          <ProtectedRoute>
+            <CourseDetailPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'courses/:slug/checkout',
+        element: (
+          <ProtectedRoute>
+            <CheckoutPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'lessons/:id',
+        element: (
+          <ProtectedRoute>
+            <LessonPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'lessons/:id/quiz',
+        element: (
+          <ProtectedRoute>
+            <QuizPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'exercises/:id',
+        element: (
+          <ProtectedRoute>
+            <Lazy><ExercisePage /></Lazy>
+          </ProtectedRoute>
+        ),
+      },
       { path: 'search', element: <SearchPage /> },
       { path: 'leaderboard', element: <LeaderboardPage /> },
       { path: 'login', element: <LoginPage /> },
