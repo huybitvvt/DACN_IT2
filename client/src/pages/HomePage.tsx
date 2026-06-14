@@ -244,7 +244,7 @@ export default function HomePage() {
               data-reveal-delay="160"
             >
               Đọc bài học, chạy code ngay trên trình duyệt, làm bài tập được chấm tự động và hỏi
-              trợ lý AI khi gặp khó khăn. Tất cả hoàn toàn miễn phí.
+              trợ lý AI khi gặp khó khăn. Mua khoá học với giá minh bạch và mở khoá tự động sau thanh toán.
             </p>
 
             <div
@@ -279,7 +279,7 @@ export default function HomePage() {
               {[
                 { v: '4', l: 'Ngôn ngữ' },
                 { v: `${totalLessons}+`, l: 'Bài học' },
-                { v: '100%', l: 'Miễn phí' },
+                { v: '2.000đ', l: 'Mỗi khoá' },
               ].map((s) => (
                 <div key={s.l} className="text-center lg:text-left">
                   <dt className="sr-only">{s.l}</dt>
@@ -588,7 +588,7 @@ export default function HomePage() {
         <div className="relative mx-auto max-w-2xl">
           <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-sm font-medium text-brand-100 backdrop-blur">
             <Sparkles className="h-4 w-4 text-accent-500" />
-            Miễn phí · Không cần thẻ tín dụng
+            Đăng ký miễn phí · Thanh toán bằng VietQR
           </span>
           <h2 className="mt-6 font-display text-3xl font-extrabold tracking-tight sm:text-5xl">
             Sẵn sàng viết dòng code{' '}
