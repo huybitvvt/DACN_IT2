@@ -67,6 +67,124 @@ export interface AdminPurchase {
   };
 }
 
+export interface AdminContestReward {
+  id?: string;
+  rankFrom: number;
+  rankTo: number;
+  title: string;
+  description: string;
+  rewardType: 'TUITION_REFUND' | 'VOUCHER' | 'BADGE' | 'UNLOCK';
+  valueVnd: number | null;
+  percentOff: number | null;
+}
+
+export interface AdminContestProblem {
+  id?: string;
+  problemType: 'EXERCISE' | 'QUIZ';
+  exerciseId: string | null;
+  quizId: string | null;
+  title: string;
+  points: number;
+  order: number;
+}
+
+export interface AdminContest {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  status: 'UPCOMING' | 'ACTIVE' | 'FINISHED';
+  courseSlug: string | null;
+  startsAt: string;
+  endsAt: string;
+  durationMinutes: number;
+  scoringNote: string;
+  rewards: AdminContestReward[];
+  problems: AdminContestProblem[];
+}
+
+export interface AdminRewardClaim {
+  id: string;
+  rank: number;
+  score: number;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  note: string;
+  createdAt: string;
+  reviewedAt: string | null;
+  user: { id: string; email: string; displayName: string };
+  contest: { id: string; slug: string; title: string };
+  reward: {
+    id: string;
+    title: string;
+    description: string;
+    rewardType: string;
+    percentOff: number | null;
+    valueVnd: number | null;
+  };
+}
+
+export interface AdminRetentionRisk {
+  user: { id: string; email: string; displayName: string };
+  healthScore: number;
+  riskLevel: 'HIGH' | 'MEDIUM' | 'LOW';
+  daysInactive: number;
+  streak: number;
+  overallPercent: number;
+  paidCourses: number;
+  completedItems: number;
+  totalItems: number;
+  recent: {
+    submissions: number;
+    passedSubmissions: number;
+    quizAttempts: number;
+  };
+  pendingRewards: number;
+  scoreFormula: {
+    version: string;
+    factors: Array<{
+      key: string;
+      label: string;
+      score: number;
+      maxScore: number;
+      explanation: string;
+    }>;
+    reasons: string[];
+  };
+  latestIntervention: {
+    id: string;
+    status: 'ACTIVE' | 'COMPLETED' | 'EXPIRED' | 'CANCELLED';
+    source: 'SYSTEM' | 'ADMIN';
+    baselineHealthScore: number;
+    targetMissions: number;
+    completedMissions: number;
+    startsAt: string;
+    dueAt: string;
+    completedAt: string | null;
+    outcome: { scoreDelta?: number; completionRate?: number } | null;
+  } | null;
+  weakestCourse: {
+    id: string;
+    slug: string;
+    title: string;
+    completed: number;
+    total: number;
+    percent: number;
+  } | null;
+  suggestedAction: string;
+}
+
+export interface AdminRetentionRisksResponse {
+  summary: {
+    totalPaidLearners: number;
+    highRisk: number;
+    mediumRisk: number;
+    lowRisk: number;
+    pendingRewards: number;
+    activeInterventions: number;
+  };
+  learners: AdminRetentionRisk[];
+}
+
 // ---- Courses ----
 export const adminListCourses = () =>
   api.get<{ courses: AdminCourse[] }>('/admin/courses').then((r) => r.data.courses);
@@ -105,6 +223,14 @@ export const adminDeleteExercise = (id: string) =>
 export const adminListUsers = () =>
   api.get<{ users: AdminUser[] }>('/admin/users').then((r) => r.data.users);
 
+export const adminListRetentionRisks = () =>
+  api.get<AdminRetentionRisksResponse>('/admin/retention-risks').then((r) => r.data);
+
+export const adminAssignRetentionIntervention = (userId: string) =>
+  api
+    .post(`/admin/retention-interventions/${userId}`)
+    .then((response) => response.data.intervention);
+
 // ---- Purchases ----
 export const adminListPurchases = (params: { status?: PurchaseStatus | ''; q?: string }) =>
   api
@@ -113,3 +239,23 @@ export const adminListPurchases = (params: { status?: PurchaseStatus | ''; q?: s
 
 export const adminMarkPurchasePaid = (id: string) =>
   api.post<{ purchase: AdminPurchase }>(`/admin/purchases/${id}/mark-paid`).then((r) => r.data.purchase);
+
+// ---- Contests ----
+export const adminListContests = () =>
+  api.get<{ contests: AdminContest[] }>('/admin/contests').then((r) => r.data.contests);
+export const adminCreateContest = (data: Partial<AdminContest>) =>
+  api.post<{ contest: AdminContest }>('/admin/contests', data).then((r) => r.data.contest);
+export const adminUpdateContest = (id: string, data: Partial<AdminContest>) =>
+  api.put<{ contest: AdminContest }>(`/admin/contests/${id}`, data).then((r) => r.data.contest);
+export const adminDeleteContest = (id: string) =>
+  api.delete(`/admin/contests/${id}`).then((r) => r.data);
+
+export const adminListRewardClaims = () =>
+  api.get<{ claims: AdminRewardClaim[] }>('/admin/reward-claims').then((r) => r.data.claims);
+export const adminUpdateRewardClaim = (
+  id: string,
+  data: { status: AdminRewardClaim['status']; note?: string },
+) =>
+  api
+    .put<{ claim: AdminRewardClaim }>(`/admin/reward-claims/${id}`, data)
+    .then((r) => r.data.claim);

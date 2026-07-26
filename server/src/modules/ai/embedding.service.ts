@@ -1,24 +1,21 @@
 import { prisma } from '../../db/prisma.js';
 
-// Tạo embeddings cục bộ bằng Transformers.js (model all-MiniLM-L6-v2, 384 chiều).
+// Tạo embeddings cục bộ bằng Transformers.js (model multilingual MiniLM, 384 chiều).
 // Miễn phí, chạy offline, không cần API key.
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let embedderPromise: Promise<any> | null = null;
 
 export function isSemanticRagEnabled(): boolean {
   return process.env.ENABLE_SEMANTIC_RAG === 'true';
 }
 
-async function getEmbedder() {
-  if (!embedderPromise) {
-    const { pipeline } = await import('@xenova/transformers');
-    // Model đa ngôn ngữ — hỗ trợ tiếng Việt tốt hơn all-MiniLM (vốn thiên tiếng Anh).
-    embedderPromise = pipeline(
-      'feature-extraction',
-      'Xenova/paraphrase-multilingual-MiniLM-L12-v2',
-    );
-  }
+async function createEmbedder() {
+  const { pipeline } = await import('@huggingface/transformers');
+  return pipeline('feature-extraction', 'Xenova/paraphrase-multilingual-MiniLM-L12-v2');
+}
+
+let embedderPromise: ReturnType<typeof createEmbedder> | null = null;
+
+function getEmbedder() {
+  embedderPromise ??= createEmbedder();
   return embedderPromise;
 }
 

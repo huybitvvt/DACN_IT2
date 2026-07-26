@@ -13,6 +13,10 @@ import certificateRouter from '../modules/certificate/certificate.routes.js';
 import leaderboardRouter from '../modules/leaderboard/leaderboard.routes.js';
 import engagementRouter from '../modules/engagement/engagement.routes.js';
 import paymentRouter from '../modules/payment/payment.routes.js';
+import contestRouter from '../modules/contest/contest.routes.js';
+import retentionRouter from '../modules/retention/retention.routes.js';
+import notificationRouter from '../modules/notification/notification.routes.js';
+import learningProfileRouter from '../modules/learning-profile/learning-profile.routes.js';
 
 // Router gốc cho toàn bộ API.
 const apiRouter = Router();
@@ -28,6 +32,10 @@ apiRouter.use(gamificationRouter);
 apiRouter.use(aiRouter);
 apiRouter.use(certificateRouter);
 apiRouter.use(leaderboardRouter);
+apiRouter.use(contestRouter);
+apiRouter.use(retentionRouter);
+apiRouter.use(notificationRouter);
+apiRouter.use(learningProfileRouter);
 apiRouter.use(engagementRouter);
 apiRouter.use('/admin', adminRouter);
 apiRouter.use(paymentRouter);

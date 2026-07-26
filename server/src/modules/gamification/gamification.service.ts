@@ -1,6 +1,7 @@
 import { prisma } from '../../db/prisma.js';
 import { computeStreak } from './streak.js';
 import { getProgressOverview } from '../progress/progress.service.js';
+import { createNotification } from '../notification/notification.service.js';
 
 // Cập nhật streak khi người dùng có hoạt động học tập.
 export async function recordActivity(userId: string, now = new Date()): Promise<void> {
@@ -32,6 +33,15 @@ export async function awardBadge(userId: string, badgeCode: string): Promise<voi
   if (existing) return;
 
   await prisma.userBadge.create({ data: { userId, badgeId: badge.id } });
+  await createNotification({
+    userId,
+    type: 'BADGE',
+    title: 'Bạn vừa nhận huy hiệu mới',
+    message: `${badge.title}: ${badge.description}`,
+    href: '/dashboard',
+    dedupeKey: `badge-${badge.id}`,
+    sendEmail: true,
+  });
 }
 
 // Kiểm tra & trao các huy hiệu dựa trên tiến độ hiện tại.

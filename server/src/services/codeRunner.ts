@@ -1,14 +1,15 @@
 import { env } from '../config/env.js';
 import { AppError } from '../utils/AppError.js';
 
-// Dịch vụ chạy/biên dịch code cho C và C++ qua Wandbox (https://wandbox.org).
-// Miễn phí, không cần API key. Python/SQL vẫn chạy phía client (Pyodide/sql.js).
+// Dịch vụ chạy/biên dịch code qua Judge0 CE tự host local.
+// Python/SQL vẫn chạy thử phía client (Pyodide/sql.js), nhưng khi nộp bài thì
+// server có thể chấm tập trung để giữ kín test case ẩn.
 
-// Ánh xạ ngôn ngữ nội bộ -> compiler và tên file trên Wandbox.
-const COMPILERS: Record<string, { compiler: string; filename: string }> = {
-  C: { compiler: 'gcc-13.2.0-c', filename: 'main.c' },
-  CPP: { compiler: 'gcc-13.2.0', filename: 'main.cpp' },
-  PYTHON: { compiler: 'cpython-3.13.8', filename: 'main.py' },
+// Language id mặc định của Judge0 CE.
+const LANGUAGE_IDS: Record<string, number> = {
+  C: 50,
+  CPP: 54,
+  PYTHON: 71,
 };
 
 export interface RunResult {
@@ -19,12 +20,12 @@ export interface RunResult {
   timeMs: number | null;
 }
 
-function getCompiler(language: string) {
-  const c = COMPILERS[language];
-  if (!c) {
+function getLanguageId(language: string) {
+  const languageId = LANGUAGE_IDS[language];
+  if (!languageId) {
     throw AppError.badRequest(`Ngôn ngữ không được hỗ trợ bởi trình chạy server: ${language}`);
   }
-  return c;
+  return languageId;
 }
 
 async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number) {
@@ -42,15 +43,16 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: nu
   }
 }
 
-interface WandboxResponse {
-  status?: string; // mã thoát chương trình ('0' nếu thành công)
-  signal?: string;
-  compiler_output?: string;
-  compiler_error?: string;
-  compiler_message?: string;
-  program_output?: string;
-  program_error?: string;
-  program_message?: string;
+interface Judge0Response {
+  stdout?: string | null;
+  stderr?: string | null;
+  compile_output?: string | null;
+  message?: string | null;
+  time?: string | null;
+  status?: {
+    id?: number;
+    description?: string;
+  };
 }
 
 // Biên dịch & chạy code. Trả về stdout/stderr/compileOutput đã chuẩn hoá.
@@ -59,18 +61,25 @@ export async function executeCode(params: {
   sourceCode: string;
   stdin?: string;
 }): Promise<RunResult> {
-  const { compiler } = getCompiler(params.language);
+  const languageId = getLanguageId(params.language);
 
   const body = {
-    compiler,
-    code: params.sourceCode,
+    language_id: languageId,
+    source_code: params.sourceCode,
     stdin: params.stdin ?? '',
-    // Bật tối ưu cơ bản và chuẩn C++ hiện đại.
-    'compiler-option-raw': params.language === 'CPP' ? '-std=c++17' : '',
+    cpu_time_limit: 5,
+    wall_time_limit: 10,
+    memory_limit: 128000,
+    enable_network: false,
+    // Docker Desktop on Windows uses cgroup v2, while Judge0 CE 1.13.x ships
+    // isolate configured for cgroup v1. These flags make Judge0 use regular
+    // per-process limits so local demo submissions run correctly.
+    enable_per_process_and_thread_time_limit: true,
+    enable_per_process_and_thread_memory_limit: true,
   };
 
   const res = await fetchWithTimeout(
-    `${env.wandboxUrl}/api/compile.json`,
+    `${env.judge0Url.replace(/\/$/, '')}/submissions?base64_encoded=false&wait=true`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -83,27 +92,26 @@ export async function executeCode(params: {
     if (res.status === 429) {
       throw AppError.tooManyRequests('Trình chạy code đang quá tải. Vui lòng thử lại sau.');
     }
-    throw AppError.badGateway(`Trình chạy code trả về lỗi (HTTP ${res.status}).`);
+    throw AppError.badGateway(`Judge0 trả về lỗi (HTTP ${res.status}).`);
   }
 
-  const data = (await res.json()) as WandboxResponse;
+  const data = (await res.json()) as Judge0Response;
 
-  const compileOutput = data.compiler_error ?? '';
-  const exitStatus = data.status ?? '';
-  let status: string;
-  if (compileOutput && (data.program_output === undefined || exitStatus === '')) {
-    status = 'Lỗi biên dịch';
-  } else if (exitStatus === '0') {
+  const compileOutput = data.compile_output ?? '';
+  const statusDescription = data.status?.description ?? 'Không rõ trạng thái';
+  const statusId = data.status?.id;
+  let status = statusDescription;
+  if (statusId === 3) {
     status = 'Thành công';
-  } else {
-    status = `Kết thúc với mã thoát ${exitStatus || '?'}`;
+  } else if (statusId === 6) {
+    status = 'Lỗi biên dịch';
   }
 
   return {
-    stdout: (data.program_output ?? '').replace(/\n$/, ''),
-    stderr: (data.program_error ?? '').replace(/\n$/, ''),
+    stdout: (data.stdout ?? '').replace(/\n$/, ''),
+    stderr: ((data.stderr ?? '') + (data.message ? `\n${data.message}` : '')).trim(),
     compileOutput: compileOutput.replace(/\n$/, ''),
     status,
-    timeMs: null, // Wandbox không trả thời gian chạy ổn định.
+    timeMs: data.time ? Math.round(Number(data.time) * 1000) : null,
   };
 }

@@ -4,13 +4,18 @@
 const PYODIDE_VERSION = 'v0.26.4';
 const PYODIDE_CDN = `https://cdn.jsdelivr.net/pyodide/${PYODIDE_VERSION}/full/`;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let pyodidePromise: Promise<any> | null = null;
+interface PyodideInstance {
+  setStdout(options: { batched: (value: string) => void }): void;
+  setStderr(options: { batched: (value: string) => void }): void;
+  setStdin(options: { stdin: () => string | null }): void;
+  runPythonAsync(code: string): Promise<unknown>;
+}
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let pyodidePromise: Promise<PyodideInstance> | null = null;
+
 declare global {
   interface Window {
-    loadPyodide?: (config: { indexURL: string }) => Promise<any>;
+    loadPyodide?: (config: { indexURL: string }) => Promise<PyodideInstance>;
   }
 }
 
@@ -28,8 +33,7 @@ function loadScript(src: string): Promise<void> {
   });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function getPyodide(): Promise<any> {
+async function getPyodide(): Promise<PyodideInstance> {
   if (!pyodidePromise) {
     pyodidePromise = (async () => {
       await loadScript(`${PYODIDE_CDN}pyodide.js`);

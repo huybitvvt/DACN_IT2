@@ -34,9 +34,19 @@ router.delete('/quizzes/:id', c.deleteQuiz);
 
 // Users
 router.get('/users', c.listUsers);
+router.get('/retention-risks', c.listRetentionRisks);
+router.post('/retention-interventions/:id', c.assignRetentionIntervention);
 
 // Purchases
 router.get('/purchases', c.listPurchases);
 router.post('/purchases/:id/mark-paid', c.markPurchasePaid);
+
+// Contests & reward claims
+router.get('/contests', c.listContests);
+router.post('/contests', c.createContest);
+router.put('/contests/:id', c.updateContest);
+router.delete('/contests/:id', c.deleteContest);
+router.get('/reward-claims', c.listRewardClaims);
+router.put('/reward-claims/:id', c.updateRewardClaimStatus);
 
 export default router;

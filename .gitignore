@@ -9,6 +9,9 @@ build/
 out/
 *.tsbuildinfo
 
+# Local LLM model binaries/cache (download or copy separately)
+docker/local-services/models/
+
 # Environment variables (NEVER commit secrets)
 .env
 .env.local
@@ -35,6 +38,8 @@ Thumbs.db
 
 # Test coverage
 coverage/
+playwright-report/
+test-results/
 
 # Misc
 *.local

@@ -1,7 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { CheckCircle2, Copy, Loader2, QrCode, RefreshCw } from 'lucide-react';
-import { createCourseCheckout, getCourseCheckoutStatus, type CourseCheckout } from '@/lib/paymentApi';
+import { CheckCircle2, Copy, Loader2, QrCode, RefreshCw, TestTube2 } from 'lucide-react';
+import {
+  confirmDemoCoursePayment,
+  createCourseCheckout,
+  getCourseCheckoutStatus,
+  type CourseCheckout,
+} from '@/lib/paymentApi';
 import { getErrorMessage } from '@/lib/api';
 import { formatVnd } from '@/lib/format';
 import Alert from '@/components/ui/Alert';
@@ -15,26 +20,30 @@ export default function CheckoutPage() {
   const [paid, setPaid] = useState(false);
   const [checking, setChecking] = useState(false);
   const [renewing, setRenewing] = useState(false);
+  const [demoConfirming, setDemoConfirming] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
 
-  async function refreshStatus(options: { manual?: boolean } = {}) {
-    if (!slug) return;
-    if (options.manual) setChecking(true);
-    setError('');
-    try {
-      const purchase = await getCourseCheckoutStatus(slug);
-      setCheckout((current) => (current ? { ...current, purchase } : current));
-      if (purchase.status === 'PAID') {
-        setPaid(true);
-        window.setTimeout(() => navigate(`/courses/${slug}`, { replace: true }), 1600);
+  const refreshStatus = useCallback(
+    async (options: { manual?: boolean } = {}) => {
+      if (!slug) return;
+      if (options.manual) setChecking(true);
+      setError('');
+      try {
+        const purchase = await getCourseCheckoutStatus(slug);
+        setCheckout((current) => (current ? { ...current, purchase } : current));
+        if (purchase.status === 'PAID') {
+          setPaid(true);
+          window.setTimeout(() => navigate(`/courses/${slug}`, { replace: true }), 1600);
+        }
+      } catch (err) {
+        setError(getErrorMessage(err, 'Không kiểm tra được trạng thái thanh toán.'));
+      } finally {
+        if (options.manual) setChecking(false);
       }
-    } catch (err) {
-      setError(getErrorMessage(err, 'Không kiểm tra được trạng thái thanh toán.'));
-    } finally {
-      if (options.manual) setChecking(false);
-    }
-  }
+    },
+    [navigate, slug],
+  );
 
   useEffect(() => {
     if (!slug) return;
@@ -49,7 +58,8 @@ export default function CheckoutPage() {
   }, [slug]);
 
   useEffect(() => {
-    if (!slug || !checkout || paid) return;
+    const purchaseId = checkout?.purchase.id;
+    if (!slug || !purchaseId || paid) return;
 
     let stopped = false;
     const pollStatus = () => {
@@ -62,7 +72,7 @@ export default function CheckoutPage() {
       stopped = true;
       window.clearInterval(intervalId);
     };
-  }, [checkout?.purchase.id, paid, slug]);
+  }, [checkout?.purchase.id, paid, refreshStatus, slug]);
 
   async function handleCopy() {
     if (!checkout) return;
@@ -83,6 +93,22 @@ export default function CheckoutPage() {
       setError(getErrorMessage(err, 'Không tạo được mã thanh toán mới.'));
     } finally {
       setRenewing(false);
+    }
+  }
+
+  async function handleDemoConfirm() {
+    if (!slug) return;
+    setDemoConfirming(true);
+    setError('');
+    try {
+      const purchase = await confirmDemoCoursePayment(slug);
+      setCheckout((current) => (current ? { ...current, purchase } : current));
+      setPaid(true);
+      window.setTimeout(() => navigate(`/courses/${slug}`, { replace: true }), 1200);
+    } catch (err) {
+      setError(getErrorMessage(err, 'Không xác nhận được thanh toán demo.'));
+    } finally {
+      setDemoConfirming(false);
     }
   }
 
@@ -191,6 +217,17 @@ export default function CheckoutPage() {
                 >
                   {renewing ? 'Đang tạo mã...' : checkout.purchase.isExpired ? 'Tạo mã mới' : 'Làm mới mã QR'}
                 </button>
+                {checkout.demoPaymentEnabled && (
+                  <button
+                    type="button"
+                    disabled={demoConfirming}
+                    onClick={() => void handleDemoConfirm()}
+                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-800 transition-colors hover:bg-amber-100 disabled:opacity-60 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+                  >
+                    <TestTube2 className="h-4 w-4" />
+                    {demoConfirming ? 'Đang mô phỏng...' : 'Xác nhận thanh toán demo'}
+                  </button>
+                )}
               </div>
             )}
           </div>

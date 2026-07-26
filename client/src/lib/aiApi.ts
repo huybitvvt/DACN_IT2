@@ -49,10 +49,12 @@ export async function sendChatStream(
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
+  let streamDone = false;
 
-  while (true) {
+  while (!streamDone) {
     const { done, value } = await reader.read();
-    if (done) break;
+    streamDone = done;
+    if (streamDone) break;
     buffer += decoder.decode(value, { stream: true });
     const lines = buffer.split('\n');
     buffer = lines.pop() ?? '';
@@ -61,13 +63,14 @@ export async function sendChatStream(
       if (!trimmed.startsWith('data:')) continue;
       const payload = trimmed.slice(5).trim();
       if (payload === '[DONE]') return;
+      let json: { token?: string; error?: string };
       try {
-        const json = JSON.parse(payload) as { token?: string; error?: string };
-        if (json.error) throw new Error(json.error);
-        if (json.token) onToken?.(json.token);
+        json = JSON.parse(payload) as { token?: string; error?: string };
       } catch {
-        // bỏ qua dòng lỗi parse
+        continue;
       }
+      if (json.error) throw new Error(json.error);
+      if (json.token) onToken?.(json.token);
     }
   }
 }

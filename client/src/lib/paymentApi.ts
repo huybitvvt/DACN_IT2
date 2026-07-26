@@ -24,6 +24,7 @@ export interface CourseCheckout {
     accountNo: string;
     accountName: string;
   };
+  demoPaymentEnabled: boolean;
 }
 
 export interface PurchaseHistoryItem extends CheckoutPurchase {
@@ -37,6 +38,13 @@ export async function createCourseCheckout(slug: string): Promise<CourseCheckout
 
 export async function getCourseCheckoutStatus(slug: string): Promise<CourseCheckout['purchase']> {
   const { data } = await api.get<{ purchase: CourseCheckout['purchase'] }>(`/courses/${slug}/checkout/status`);
+  return data.purchase;
+}
+
+export async function confirmDemoCoursePayment(slug: string): Promise<CourseCheckout['purchase']> {
+  const { data } = await api.post<{ purchase: CourseCheckout['purchase'] }>(
+    `/courses/${slug}/checkout/demo-confirm`,
+  );
   return data.purchase;
 }
 

@@ -168,7 +168,7 @@ const TESTIMONIALS = [
   },
 ];
 
-const MARQUEE = ['Python', 'SQL', 'C', 'C++', 'Pyodide', 'Wandbox', 'AI Assistant', 'Quiz', 'Chứng chỉ'];
+const MARQUEE = ['Python', 'SQL', 'C', 'C++', 'Pyodide', 'Judge0', 'AI Tutor', 'Quiz', 'Chứng chỉ'];
 
 /** Dòng code mô phỏng trong "editor" của hero. */
 const CODE_LINES = [

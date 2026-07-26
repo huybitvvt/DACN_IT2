@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ArrowRight, ShieldCheck } from 'lucide-react';
 import { fetchProgress, type ProgressOverview } from '@/lib/progressApi';
 import { fetchGamification, type GamificationData } from '@/lib/gamificationApi';
 import { getErrorMessage } from '@/lib/api';
@@ -37,6 +38,29 @@ export default function DashboardPage() {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Xin chào, {user?.displayName}</h1>
         <p className="text-gray-600 dark:text-gray-400">Theo dõi tiến độ học tập của bạn.</p>
       </div>
+
+      <section className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 dark:border-emerald-900 dark:bg-emerald-950/30">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg bg-white text-emerald-700 shadow-sm dark:bg-slate-900 dark:text-emerald-200">
+              <ShieldCheck className="h-5 w-5" />
+            </span>
+            <div>
+              <h2 className="font-bold text-emerald-950 dark:text-emerald-100">Trạm giữ nhịp học tập</h2>
+              <p className="mt-1 text-sm leading-6 text-emerald-800 dark:text-emerald-200">
+                Xem điểm giữ nhịp, nguy cơ bỏ học và nhiệm vụ ưu tiên hôm nay.
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/retention"
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-800"
+          >
+            Mở giữ nhịp
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </section>
 
       {/* Gamification: streak + huy hiệu */}
       {gamification && (

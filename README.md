@@ -1,16 +1,16 @@
 # Learn Programming Platform — Website hỗ trợ học lập trình
 
-Nền tảng học lập trình tương tác cho **SQL, C, C++, Python**: đọc bài học, chạy code trực tiếp trên trình duyệt, làm bài tập chấm tự động, quiz, theo dõi tiến độ, gamification và trợ lý AI giới hạn phạm vi (Groq + RAG). Có trang quản trị đầy đủ.
+Nền tảng học lập trình tương tác cho **SQL, C, C++, Python**: học và chấm code, AI tutor local có RAG, thi đua có thưởng, trung tâm thông báo, hồ sơ lỗi Code DNA và vòng can thiệp 48 giờ dành cho học viên có nguy cơ bỏ học. Có trang quản trị theo dõi và đo kết quả can thiệp.
 
-> Đồ án chuyên ngành. Tài liệu đặc tả chi tiết nằm trong `.kiro/specs/learn-programming-platform/` (requirements, design, tasks) và báo cáo tổng quan trong `docs/BAO_CAO_TONG_QUAN.md`.
+> Đồ án chuyên ngành. Xem kiến trúc khác biệt tại `docs/KIEN_TRUC_GIU_CHAN_HOC_VIEN.md` và kế hoạch bảo vệ tại `docs/KE_HOACH_PHAT_TRIEN_BAO_VE.md`.
 
 ## Công nghệ
 
 - **Frontend:** React + Vite + TypeScript + TailwindCSS + CodeMirror 6
 - **Backend:** Node.js + Express + TypeScript + Prisma
 - **Database:** PostgreSQL
-- **Chạy code:** Pyodide (Python) & sql.js (SQL) phía client; Wandbox cho C/C++ và chấm bài
-- **AI:** Groq API (gọi từ backend) + RAG bằng PostgreSQL full-text search
+- **Chạy code:** Pyodide (Python) & sql.js (SQL) phía client; Judge0 CE local cho C/C++ và chấm bài server-side
+- **AI:** Llama local qua OpenAI-compatible API + RAG bằng PostgreSQL full-text search / embedding offline
 
 ## Cấu trúc dự án (monorepo dùng npm workspaces)
 
@@ -33,6 +33,7 @@ Nền tảng học lập trình tương tác cho **SQL, C, C++, Python**: đọc
 - **Node.js >= 20** (kiểm tra: `node --version`)
 - **PostgreSQL** (kiểm tra: `psql --version`). Nếu chưa có, tải tại
   https://www.postgresql.org/download/ — khi cài nhớ **mật khẩu của user `postgres`**.
+- **Docker Desktop** nếu muốn chạy Judge0 CE local để chấm C/C++/Python server-side.
 - **Git**
 
 ### Bước 1 — Tải mã nguồn
@@ -84,12 +85,15 @@ DATABASE_URL=postgresql://postgres:MAT_KHAU_CUA_BAN@localhost:5432/learn_program
 # Một chuỗi bí mật ngẫu nhiên, dài, khó đoán
 JWT_SECRET=doi-thanh-chuoi-bi-mat-ngau-nhien
 
-# Khoá Groq cho trợ lý AI (lấy miễn phí tại https://console.groq.com)
-GROQ_API_KEY=gsk_...
+# Trợ lý AI local. Ví dụ llama.cpp hoặc llama-cpp-python server chạy ở cổng 8080.
+LOCAL_LLM_BASE_URL=http://localhost:8080/v1
+LOCAL_LLM_MODEL=local-llama
+
+# Judge0 CE local để chạy/chấm C/C++/Python khi nộp bài
+JUDGE0_URL=http://localhost:2358
 ```
 
-> Phần chạy code C/C++ dùng **Wandbox** — miễn phí, **không cần khoá**.
-> Nếu để trống `GROQ_API_KEY`, mọi chức năng khác vẫn chạy, chỉ trợ lý AI là không hoạt động.
+> Python/SQL vẫn có thể chạy thử phía trình duyệt. Để demo đầy đủ nộp bài C/C++ và trợ lý AI, hãy bật Judge0 CE local và Llama server local trước khi chạy backend.
 
 ### Bước 5 — Tạo bảng và nạp dữ liệu mẫu
 
@@ -117,6 +121,20 @@ Mở trình duyệt: **http://localhost:5173**
 
 > Lần đầu bấm "Chạy" code Python, trình duyệt cần tải Pyodide (~vài giây) rồi sẽ nhanh ở các lần sau.
 
+### Chạy toàn bộ luồng demo bằng một lệnh
+
+Sau khi đã cấu hình `.env`, PostgreSQL và model GGUF:
+
+```bash
+npm run demo:up
+```
+
+Lệnh này bật Judge0 + Llama, áp dụng migration, kiểm tra seed, chạy backend/frontend và tạo Cloudflare Quick Tunnel cho webhook SePay. URL webhook được in ra và sao chép vào clipboard. Kiểm tra nhanh toàn bộ hạ tầng và API trọng yếu:
+
+```bash
+npm run demo:smoke
+```
+
 ---
 
 ## Các lệnh hữu ích
@@ -129,6 +147,11 @@ Mở trình duyệt: **http://localhost:5173**
 | `npm run test` | Chạy toàn bộ test |
 | `npm run seed --workspace server` | Nạp lại dữ liệu mẫu |
 | `npm run prisma:studio --workspace server` | Mở giao diện xem/sửa database |
+| `npm run local:services` | Bật Judge0 local bằng Docker |
+| `npm run local:services:llama` | Bật Judge0 + Llama local bằng Docker |
+| `npm run demo:up` | Chuẩn bị và chạy toàn bộ môi trường demo |
+| `npm run demo:status` | Xem trạng thái các dịch vụ demo |
+| `npm run demo:smoke` | Kiểm tra hạ tầng và API nghiệp vụ sau đăng nhập |
 
 ## Trải nghiệm thử
 
@@ -137,15 +160,19 @@ Mở trình duyệt: **http://localhost:5173**
 3. Mở một bài tập → viết code → **Nộp bài** để được chấm tự động.
 4. Làm **Quiz** sau bài học.
 5. Bấm nút 🤖 góc dưới phải để hỏi **trợ lý AI**.
-6. Xem **Tiến độ** (dashboard) và **Quản trị** (nếu là admin).
+6. Xem **Giữ nhịp** để thấy lý do chấm điểm và gói cứu nhịp 48 giờ.
+7. Xem **Code DNA** để thấy nhóm lỗi lập trình và khuyến nghị luyện tập.
+8. Mở chuông **Thông báo** để xem thanh toán, phần thưởng, mùa thi, huy hiệu và nhắc giữ nhịp.
+9. Vào **Quản trị → Can thiệp sớm** để giao nhiệm vụ và theo dõi kết quả phục hồi.
 
 ## Kiểm thử
 
 ```bash
-npm run test --workspace server
+npm run test
+npm run demo:smoke
 ```
 
-Bộ test gồm 45 unit/integration test (Vitest + Supertest) phủ các bất biến quan trọng: bảo mật mật khẩu, kín test case ẩn, tính nhất quán chấm bài, phân quyền admin, tính phần trăm tiến độ, quy tắc streak, guardrail của trợ lý AI.
+Bộ test hiện có **58 test** frontend/backend và **4 E2E test** trên Edge desktop/mobile. Các kiểm tra phủ bảo mật mật khẩu, kín test case ẩn, chấm bài, phân quyền admin, tiến độ, streak, guardrail AI, công thức rủi ro, phân loại lỗi và định dạng giao diện. Smoke test kiểm tra thêm bốn dịch vụ local và năm API nghiệp vụ.
 
 ## Bảo mật
 
@@ -156,7 +183,7 @@ Bộ test gồm 45 unit/integration test (Vitest + Supertest) phủ các bất b
 - **Chống XSS**: nội dung Markdown được sanitize bằng DOMPurify trước khi render.
 - **Chống SQL Injection**: Prisma ORM (truy vấn tham số hoá); RAG dùng tham số `$1/$2`.
 - **Rate limit**: giới hạn tần suất cho `/run`, `/exercises/:id/submit`, `/ai/chat` và toàn bộ `/api`.
-- **Bí mật**: `GROQ_API_KEY`, `DATABASE_URL`, `JWT_SECRET` đặt trong biến môi trường, không commit `.env`.
+- **Bí mật**: `LOCAL_LLM_API_KEY` nếu có, `DATABASE_URL`, `JWT_SECRET` đặt trong biến môi trường, không commit `.env`.
 
 ## Khả năng tiếp cận & Responsive
 
@@ -164,10 +191,10 @@ Bộ test gồm 45 unit/integration test (Vitest + Supertest) phủ các bất b
 - Liên kết "Bỏ qua tới nội dung chính" cho người dùng bàn phím/đọc màn hình.
 - HTML ngữ nghĩa (`header`, `nav`, `main`, `footer`), nhãn `label`, `aria-*`, `role` phù hợp.
 
-## Deploy online
+## Điểm phát triển để bảo vệ
 
-Xem hướng dẫn chi tiết trong `docs/DEPLOY.md`. Tóm tắt: deploy **1 web service** (Express phục vụ cả API lẫn giao diện đã build, cùng domain) + 1 PostgreSQL trên **Render.com** (miễn phí, không cần thẻ). Repo có sẵn `render.yaml` để dùng tính năng Blueprint.
+Xem thêm `docs/KIEN_TRUC_GIU_CHAN_HOC_VIEN.md`, `docs/KE_HOACH_PHAT_TRIEN_BAO_VE.md` và `docs/LOCAL_SERVICES.md`. Trọng tâm khác biệt là vòng kín giữ chân học viên dựa trên dữ liệu học thật, thay vì chỉ hiển thị nội dung và phần trăm tiến độ.
 
 ## Ghi chú về dịch vụ chạy code
 
-Ban đầu dự kiến dùng Judge0 (qua RapidAPI) nhưng gói free yêu cầu thẻ tín dụng, nên đã chuyển sang **Wandbox** (mã nguồn mở, miễn phí, không cần khoá). Backend là lớp trung gian nên có thể đổi sang dịch vụ khác mà không ảnh hưởng phần còn lại.
+Backend gọi **Judge0 CE local** qua `JUDGE0_URL`. Nhờ có lớp `codeRunner`, frontend và logic chấm bài không phụ thuộc trực tiếp vào công cụ compile bên dưới.

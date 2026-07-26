@@ -6,7 +6,9 @@ const adminNav = [
   { to: '/admin/lessons', label: 'Bài học' },
   { to: '/admin/exercises', label: 'Bài tập' },
   { to: '/admin/users', label: 'Người dùng' },
+  { to: '/admin/retention', label: 'Can thiệp sớm' },
   { to: '/admin/purchases', label: 'Đơn hàng' },
+  { to: '/admin/contests', label: 'Thi đua' },
 ];
 
 export default function AdminLayout() {

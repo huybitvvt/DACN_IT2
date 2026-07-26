@@ -1,5 +1,4 @@
-import { chatCompletion, type ChatMessage } from '../../services/groq.js';
-import { streamChatCompletion } from '../../services/groqStream.js';
+import { chatCompletion, streamChatCompletion, type ChatMessage } from '../../services/localLlm.js';
 import { prisma } from '../../db/prisma.js';
 import {
   buildContext,
@@ -38,7 +37,7 @@ export interface AiChatResult {
   sources: { title: string; courseTitle: string }[];
 }
 
-// Chuẩn bị messages cho Groq (RAG + system prompt + lịch sử). Dùng chung cho
+// Chuẩn bị messages cho LLM local (RAG + system prompt + lịch sử). Dùng chung cho
 // cả chế độ thường lẫn streaming. Trả về null nếu câu hỏi ngoài phạm vi.
 async function prepareMessages(
   params: AiChatParams,
@@ -83,7 +82,7 @@ export async function* handleChatStream(params: AiChatParams): AsyncGenerator<st
   }
 }
 
-// Xử lý một lượt chat: RAG + guardrail + gọi Groq.
+// Xử lý một lượt chat: RAG + guardrail + gọi LLM local.
 export async function handleChat(params: AiChatParams): Promise<AiChatResult> {
   const { message, lessonId, history = [] } = params;
 
@@ -91,7 +90,7 @@ export async function handleChat(params: AiChatParams): Promise<AiChatResult> {
   const retrieved = await retrieveRelevantLessons(message, 3);
 
   // Guardrail phụ phía backend: nếu không có bài liên quan VÀ câu hỏi không
-  // chứa từ khoá lập trình -> từ chối luôn, không tốn lượt gọi Groq (Property 8).
+  // chứa từ khoá lập trình -> từ chối luôn, không tốn lượt gọi LLM (Property 8).
   if (retrieved.length === 0 && !looksInScope(message)) {
     return { reply: OUT_OF_SCOPE_REPLY, outOfScope: true, sources: [] };
   }

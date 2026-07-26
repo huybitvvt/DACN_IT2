@@ -11,15 +11,20 @@ import {
   Shield,
   User as UserIcon,
   ReceiptText,
+  BrainCircuit,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import ThemeToggle from '@/components/ThemeToggle';
+import NotificationBell from '@/components/NotificationBell';
+import { useNotifications } from '@/context/NotificationContext';
 
 const navItems = [
   { to: '/', label: 'Trang chủ', end: true },
   { to: '/courses', label: 'Khoá học' },
   { to: '/dashboard', label: 'Tiến độ' },
+  { to: '/retention', label: 'Giữ nhịp' },
   { to: '/leaderboard', label: 'Xếp hạng' },
+  { to: '/contests', label: 'Thi đua' },
 ];
 
 /** Lấy chữ cái viết tắt từ tên hiển thị làm avatar dự phòng. */
@@ -32,6 +37,7 @@ function initials(name: string): string {
 
 export default function Header() {
   const { user, logout } = useAuth();
+  const { unreadCount } = useNotifications();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -105,6 +111,8 @@ export default function Header() {
         <div className="hidden items-center gap-2 md:flex">
           <ThemeToggle />
           {user ? (
+            <>
+            <NotificationBell />
             <div className="relative" ref={profileRef}>
               <button
                 onClick={() => setProfileOpen((v) => !v)}
@@ -167,6 +175,15 @@ export default function Header() {
                       Bảng điều khiển
                     </Link>
                     <Link
+                      to="/learning-profile"
+                      role="menuitem"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-300 transition-colors hover:bg-white/5 hover:text-white"
+                    >
+                      <BrainCircuit className="h-4 w-4" />
+                      Hồ sơ lỗi lập trình
+                    </Link>
+                    <Link
                       to="/purchases"
                       role="menuitem"
                       onClick={() => setProfileOpen(false)}
@@ -198,6 +215,7 @@ export default function Header() {
                 </div>
               )}
             </div>
+            </>
           ) : (
             <>
               <Link
@@ -277,6 +295,29 @@ export default function Header() {
                 className="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 transition-colors hover:bg-white/10 hover:text-white"
               >
                 Quản trị
+              </NavLink>
+            )}
+            {user && (
+              <NavLink
+                to="/notifications"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 transition-colors hover:bg-white/10 hover:text-white"
+              >
+                <span>Thông báo</span>
+                {unreadCount > 0 && (
+                  <span className="rounded-full bg-rose-500 px-2 py-0.5 text-xs font-bold text-white">
+                    {unreadCount}
+                  </span>
+                )}
+              </NavLink>
+            )}
+            {user && (
+              <NavLink
+                to="/learning-profile"
+                onClick={() => setMenuOpen(false)}
+                className="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 transition-colors hover:bg-white/10 hover:text-white"
+              >
+                Hồ sơ lỗi lập trình
               </NavLink>
             )}
             {user && (

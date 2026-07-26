@@ -51,7 +51,47 @@ export const quizSchema = z.object({
   questions: z.array(questionSchema).default([]),
 });
 
+export const contestRewardSchema = z.object({
+  rankFrom: z.number().int().min(1),
+  rankTo: z.number().int().min(1),
+  title: z.string().min(1).max(200),
+  description: z.string().max(1000).default(''),
+  rewardType: z.enum(['TUITION_REFUND', 'VOUCHER', 'BADGE', 'UNLOCK']).default('BADGE'),
+  valueVnd: z.number().int().min(0).nullable().optional(),
+  percentOff: z.number().int().min(0).max(100).nullable().optional(),
+});
+
+export const contestProblemSchema = z.object({
+  problemType: z.enum(['EXERCISE', 'QUIZ']),
+  exerciseId: z.string().nullable().optional(),
+  quizId: z.string().nullable().optional(),
+  title: z.string().min(1).max(200),
+  points: z.number().int().min(1).max(1000).default(100),
+  order: z.number().int().min(0).default(0),
+});
+
+export const contestSchema = z.object({
+  slug: z.string().min(1).max(80),
+  title: z.string().min(1).max(200),
+  description: z.string().max(1200).default(''),
+  status: z.enum(['UPCOMING', 'ACTIVE', 'FINISHED']).default('ACTIVE'),
+  courseSlug: z.string().max(80).nullable().optional(),
+  startsAt: z.coerce.date(),
+  endsAt: z.coerce.date(),
+  durationMinutes: z.number().int().min(5).max(360).default(60),
+  scoringNote: z.string().max(1200).default(''),
+  rewards: z.array(contestRewardSchema).default([]),
+  problems: z.array(contestProblemSchema).default([]),
+});
+
+export const rewardClaimStatusSchema = z.object({
+  status: z.enum(['PENDING', 'APPROVED', 'REJECTED']),
+  note: z.string().max(1000).default(''),
+});
+
 export type CourseInput = z.infer<typeof courseSchema>;
 export type LessonInput = z.infer<typeof lessonSchema>;
 export type ExerciseInput = z.infer<typeof exerciseSchema>;
 export type QuizInput = z.infer<typeof quizSchema>;
+export type ContestInput = z.infer<typeof contestSchema>;
+export type RewardClaimStatusInput = z.infer<typeof rewardClaimStatusSchema>;

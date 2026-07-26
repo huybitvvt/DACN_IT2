@@ -1,11 +1,5 @@
 import type { ProgrammingLanguage } from '@/types';
-
-const labels: Record<ProgrammingLanguage, string> = {
-  SQL: 'SQL',
-  C: 'C',
-  CPP: 'C++',
-  PYTHON: 'Python',
-};
+import { languageLabel } from '@/lib/language';
 
 const colors: Record<ProgrammingLanguage, string> = {
   SQL: 'bg-amber-100 text-amber-800',
@@ -17,11 +11,7 @@ const colors: Record<ProgrammingLanguage, string> = {
 export default function LanguageBadge({ language }: { language: ProgrammingLanguage }) {
   return (
     <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${colors[language]}`}>
-      {labels[language]}
+      {languageLabel(language)}
     </span>
   );
-}
-
-export function languageLabel(language: ProgrammingLanguage): string {
-  return labels[language];
 }

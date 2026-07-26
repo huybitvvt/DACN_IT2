@@ -4,7 +4,7 @@ import CodeEditor from './CodeEditor';
 import { runPython } from '@/lib/runners/pyodideRunner';
 import { runSql } from '@/lib/runners/sqlRunner';
 import { runRemote } from '@/lib/runners/remoteRunner';
-import { languageLabel } from './LanguageBadge';
+import { languageLabel } from '@/lib/language';
 
 interface CodePlaygroundProps {
   language: ProgrammingLanguage;

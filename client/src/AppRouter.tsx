@@ -14,11 +14,16 @@ import QuizPage from '@/pages/QuizPage';
 import SearchPage from '@/pages/SearchPage';
 import DashboardPage from '@/pages/DashboardPage';
 import LeaderboardPage from '@/pages/LeaderboardPage';
+import RetentionPage from '@/pages/RetentionPage';
+import ContestsPage from '@/pages/ContestsPage';
+import ContestDetailPage from '@/pages/ContestDetailPage';
 import RoadmapPage from '@/pages/RoadmapPage';
 import CertificatePage from '@/pages/CertificatePage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import CheckoutPage from '@/pages/CheckoutPage';
 import PurchaseHistoryPage from '@/pages/PurchaseHistoryPage';
+import NotificationsPage from '@/pages/NotificationsPage';
+import LearningProfilePage from '@/pages/LearningProfilePage';
 
 // Trang dùng CodeMirror được tải động để không phình bundle chính.
 const ExercisePage = lazy(() => import('@/pages/ExercisePage'));
@@ -31,6 +36,8 @@ const AdminLessons = lazy(() => import('@/pages/admin/AdminLessons'));
 const AdminExercises = lazy(() => import('@/pages/admin/AdminExercises'));
 const AdminUsers = lazy(() => import('@/pages/admin/AdminUsers'));
 const AdminPurchases = lazy(() => import('@/pages/admin/AdminPurchases'));
+const AdminContests = lazy(() => import('@/pages/admin/AdminContests'));
+const AdminRetention = lazy(() => import('@/pages/admin/AdminRetention'));
 
 function Lazy({ children }: { children: React.ReactNode }) {
   return <Suspense fallback={<div className="py-12 text-center text-gray-500">Đang tải...</div>}>{children}</Suspense>;
@@ -94,6 +101,30 @@ const router = createBrowserRouter([
       },
       { path: 'search', element: <SearchPage /> },
       { path: 'leaderboard', element: <LeaderboardPage /> },
+      {
+        path: 'contests',
+        element: (
+          <ProtectedRoute>
+            <ContestsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'contests/:slug',
+        element: (
+          <ProtectedRoute>
+            <ContestDetailPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'retention',
+        element: (
+          <ProtectedRoute>
+            <RetentionPage />
+          </ProtectedRoute>
+        ),
+      },
       { path: 'login', element: <LoginPage /> },
       { path: 'register', element: <RegisterPage /> },
       { path: 'forgot-password', element: <ForgotPasswordPage /> },
@@ -111,6 +142,22 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <PurchaseHistoryPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'notifications',
+        element: (
+          <ProtectedRoute>
+            <NotificationsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'learning-profile',
+        element: (
+          <ProtectedRoute>
+            <LearningProfilePage />
           </ProtectedRoute>
         ),
       },
@@ -145,7 +192,9 @@ const router = createBrowserRouter([
           { path: 'lessons', element: <Lazy><AdminLessons /></Lazy> },
           { path: 'exercises', element: <Lazy><AdminExercises /></Lazy> },
           { path: 'users', element: <Lazy><AdminUsers /></Lazy> },
+          { path: 'retention', element: <Lazy><AdminRetention /></Lazy> },
           { path: 'purchases', element: <Lazy><AdminPurchases /></Lazy> },
+          { path: 'contests', element: <Lazy><AdminContests /></Lazy> },
         ],
       },
       { path: '*', element: <NotFoundPage /> },

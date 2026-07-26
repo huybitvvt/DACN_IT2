@@ -4,6 +4,7 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { env } from '../../config/env.js';
 import { prisma } from '../../db/prisma.js';
 import { AppError } from '../../utils/AppError.js';
+import { createNotification } from '../notification/notification.service.js';
 
 const PENDING_CHECKOUT_EXPIRES_MINUTES = 30;
 
@@ -125,6 +126,7 @@ export async function createCourseCheckout(userId: string, slug: string) {
   return {
     course,
     purchase: toCheckoutPurchase(purchase),
+    demoPaymentEnabled: env.paymentDemoEnabled,
     qrUrl: createVietQrUrl({
       amountVnd: purchase.amountVnd,
       paymentCode: purchase.paymentCode,
@@ -135,6 +137,31 @@ export async function createCourseCheckout(userId: string, slug: string) {
       accountName: env.vietqrAccountName,
     },
   };
+}
+
+export async function confirmDemoPayment(userId: string, slug: string) {
+  if (!env.paymentDemoEnabled) {
+    throw AppError.notFound('Chế độ thanh toán demo không được bật.');
+  }
+  const course = await prisma.course.findUnique({
+    where: { slug },
+    select: { id: true },
+  });
+  if (!course) throw AppError.notFound('Không tìm thấy khoá học.');
+  const purchase = await prisma.coursePurchase.findUnique({
+    where: { userId_courseId: { userId, courseId: course.id } },
+  });
+  if (!purchase) throw AppError.badRequest('Bạn cần tạo mã thanh toán trước.');
+
+  const updated =
+    purchase.status === 'PAID'
+      ? purchase
+      : await prisma.coursePurchase.update({
+          where: { id: purchase.id },
+          data: { status: 'PAID', paidAt: new Date() },
+        });
+  await notifyPaidPurchase(updated.paymentCode);
+  return toCheckoutPurchase(updated);
 }
 
 export async function getCourseCheckoutStatus(userId: string, slug: string) {
@@ -177,6 +204,26 @@ function parseVndAmount(value: string) {
   return Number.isFinite(amount) ? Math.floor(amount) : 0;
 }
 
+async function notifyPaidPurchase(paymentCode: string | null) {
+  if (!paymentCode) return;
+  const purchase = await prisma.coursePurchase.findUnique({
+    where: { paymentCode },
+    include: {
+      course: { select: { slug: true, title: true } },
+    },
+  });
+  if (!purchase || purchase.status !== 'PAID') return;
+  await createNotification({
+    userId: purchase.userId,
+    type: 'PAYMENT',
+    title: 'Thanh toán thành công',
+    message: `Khoá học ${purchase.course.title} đã được mở. Bạn có thể bắt đầu học ngay.`,
+    href: `/courses/${purchase.course.slug}`,
+    dedupeKey: `payment-paid-${purchase.id}`,
+    sendEmail: true,
+  });
+}
+
 export async function handleSepayWebhook(payload: SepayWebhookPayload) {
   const paymentCode = extractPaymentCode(payload);
 
@@ -208,6 +255,7 @@ export async function handleSepayWebhook(payload: SepayWebhookPayload) {
     if (!isDuplicateWebhookError(error)) throw error;
   }
 
+  await notifyPaidPurchase(paymentCode);
   return { success: true };
 }
 
@@ -248,5 +296,6 @@ export async function handleSepayPaymentGatewayIpn(payload: SepayPaymentGatewayI
     if (!isDuplicateWebhookError(error)) throw error;
   }
 
+  await notifyPaidPurchase(invoiceNumber);
   return { success: true };
 }

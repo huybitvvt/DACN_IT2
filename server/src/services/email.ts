@@ -26,17 +26,25 @@ function buildButtonEmail(params: {
   intro: string;
   buttonText: string;
   fallbackText: string;
-  expiresInMinutes: number;
+  expiresInMinutes?: number;
 }) {
   const safeName = escapeHtml(params.displayName);
   const safeActionUrl = escapeHtml(params.actionUrl);
   const safeIntro = escapeHtml(params.intro);
   const safeButtonText = escapeHtml(params.buttonText);
   const safeFallbackText = escapeHtml(params.fallbackText);
+  const expiryText =
+    params.expiresInMinutes === undefined
+      ? ''
+      : ` Link hết hạn sau ${params.expiresInMinutes} phút.`;
+  const safeExpiryHtml =
+    params.expiresInMinutes === undefined
+      ? ''
+      : `<p>Link sẽ hết hạn sau ${params.expiresInMinutes} phút.</p>`;
 
   return {
     subject: params.subject,
-    text: `Xin chào ${params.displayName}, ${params.intro}: ${params.actionUrl}. Link hết hạn sau ${params.expiresInMinutes} phút.`,
+    text: `Xin chào ${params.displayName}, ${params.intro}: ${params.actionUrl}.${expiryText}`,
     html: `
       <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827">
         <p>Xin chào ${safeName},</p>
@@ -48,7 +56,7 @@ function buildButtonEmail(params: {
         </p>
         <p>${safeFallbackText}</p>
         <p><a href="${safeActionUrl}">${safeActionUrl}</a></p>
-        <p>Link sẽ hết hạn sau ${params.expiresInMinutes} phút. Nếu bạn không đăng ký tài khoản, vui lòng bỏ qua email này.</p>
+        ${safeExpiryHtml}
       </div>
     `,
   };
@@ -94,7 +102,7 @@ async function sendViaSmtp(params: {
   intro: string;
   buttonText: string;
   fallbackText: string;
-  expiresInMinutes: number;
+  expiresInMinutes?: number;
 }) {
   const transporter = nodemailer.createTransport({
     host: env.smtpHost,
@@ -207,4 +215,43 @@ export async function sendPasswordResetEmail(params: {
   }
 
   console.info(`[email-dev] Link đặt lại mật khẩu cho ${params.to}: ${params.resetUrl}`);
+}
+
+export async function sendNotificationEmail(params: {
+  to: string;
+  displayName: string;
+  subject: string;
+  message: string;
+  actionUrl: string;
+  buttonText: string;
+}) {
+  if (isEmailJsConfigured(env.emailjsTemplateNotificationId)) {
+    await sendViaEmailJs({
+      to: params.to,
+      displayName: params.displayName,
+      templateId: env.emailjsTemplateNotificationId,
+      templateParams: {
+        subject: params.subject,
+        message: params.message,
+        action_url: params.actionUrl,
+        button_text: params.buttonText,
+      },
+    });
+    return;
+  }
+
+  if (isSmtpConfigured()) {
+    await sendViaSmtp({
+      to: params.to,
+      displayName: params.displayName,
+      actionUrl: params.actionUrl,
+      subject: params.subject,
+      intro: params.message,
+      buttonText: params.buttonText,
+      fallbackText: 'Nếu nút không hoạt động, hãy mở đường dẫn này:',
+    });
+    return;
+  }
+
+  console.info(`[email-dev] ${params.subject} -> ${params.to}: ${params.actionUrl}`);
 }

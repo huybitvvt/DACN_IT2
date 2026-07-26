@@ -15,11 +15,20 @@
     "build": "npm run build:server && npm run build:client",
     "start": "npm run start --workspace server",
     "deploy:migrate": "npm run prisma:deploy --workspace server && npm run seed --workspace server",
+    "local:services": "powershell -ExecutionPolicy Bypass -File scripts/local-services.ps1 up",
+    "local:services:llama": "powershell -ExecutionPolicy Bypass -File scripts/local-services.ps1 up-llama",
+    "local:services:down": "powershell -ExecutionPolicy Bypass -File scripts/local-services.ps1 down",
+    "local:services:status": "powershell -ExecutionPolicy Bypass -File scripts/local-services.ps1 status",
+    "demo:up": "powershell -ExecutionPolicy Bypass -File scripts/demo.ps1 up",
+    "demo:status": "powershell -ExecutionPolicy Bypass -File scripts/demo.ps1 status",
+    "demo:smoke": "node scripts/demo-smoke.mjs",
+    "test:e2e": "playwright test",
     "lint": "npm run lint --workspaces --if-present",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "test": "npm run test --workspaces --if-present"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "prettier": "^3.3.3"
   },
   "engines": {

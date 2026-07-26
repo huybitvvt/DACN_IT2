@@ -59,7 +59,7 @@ export interface GradeResult {
   compileError?: string;
 }
 
-// Chấm bài: chạy code với toàn bộ test case (gồm ẩn) qua Wandbox.
+// Chấm bài: chạy code với toàn bộ test case (gồm ẩn) qua Judge0 local.
 // Server-side only — dùng cho C/C++/Python khi nộp bài.
 export async function gradeSubmission(params: {
   exerciseId: string;

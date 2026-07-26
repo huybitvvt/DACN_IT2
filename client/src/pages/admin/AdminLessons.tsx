@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   adminListCourses,
   adminListLessons,
@@ -23,26 +23,26 @@ export default function AdminLessons() {
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  async function loadCourses() {
+  const loadCourses = useCallback(async () => {
     const cs = await adminListCourses();
     setCourses(cs);
-    if (cs.length && !courseId) setCourseId(cs[0].id);
-  }
+    setCourseId((current) => current || cs[0]?.id || '');
+  }, []);
 
-  async function loadLessons(cid: string) {
+  const loadLessons = useCallback(async (cid: string) => {
     if (!cid) return;
     setLessons(await adminListLessons(cid));
-  }
+  }, []);
 
   useEffect(() => {
     loadCourses()
       .catch((err) => setError(getErrorMessage(err)))
       .finally(() => setLoading(false));
-  }, []);
+  }, [loadCourses]);
 
   useEffect(() => {
     if (courseId) void loadLessons(courseId).catch((err) => setError(getErrorMessage(err)));
-  }, [courseId]);
+  }, [courseId, loadLessons]);
 
   async function handleSave() {
     setError('');

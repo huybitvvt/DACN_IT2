@@ -6,6 +6,7 @@ import { getExerciseForLearner, gradeSubmission } from './exercise.service.js';
 import { courseIdOfLesson, markCompleted } from '../progress/progress.service.js';
 import { onLearningActivity } from '../gamification/gamification.service.js';
 import { AppError } from '../../utils/AppError.js';
+import { classifySubmissionError } from '../learning-profile/learning-profile.service.js';
 
 // GET /api/exercises/:id/submissions — lịch sử các lần nộp của người dùng cho bài tập.
 export const getSubmissionHistory = asyncHandler(async (req: Request, res: Response) => {
@@ -47,6 +48,17 @@ export const submitExercise = asyncHandler(async (req: Request, res: Response) =
 
   // Lưu submission + cập nhật tiến độ chỉ khi đã đăng nhập (Yêu cầu 4.6, 4.7).
   if (req.user) {
+    const exercise = await prisma.exercise.findUnique({
+      where: { id },
+      select: { lessonId: true, language: true },
+    });
+    const diagnostic = exercise
+      ? classifySubmissionError({
+          language: exercise.language,
+          sourceCode,
+          grade,
+        })
+      : { errorCategory: null, errorFingerprint: null, errorSummary: null };
     await prisma.submission.create({
       data: {
         userId: req.user.sub,
@@ -55,15 +67,12 @@ export const submitExercise = asyncHandler(async (req: Request, res: Response) =
         passedCount: grade.passed,
         totalCount: grade.total,
         status: grade.status,
+        ...diagnostic,
       },
     });
 
     // Nếu đạt, đánh dấu hoàn thành bài tập trong tiến độ.
     if (grade.status === 'PASSED') {
-      const exercise = await prisma.exercise.findUnique({
-        where: { id },
-        select: { lessonId: true },
-      });
       if (exercise) {
         const courseId = await courseIdOfLesson(exercise.lessonId);
         if (courseId) {

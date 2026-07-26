@@ -29,16 +29,17 @@ export const env = {
   jwtSecret: required('JWT_SECRET', 'dev-only-insecure-secret-change-me'),
   jwtExpiresIn: optional('JWT_EXPIRES_IN', '7d'),
 
-  groqApiKey: optional('GROQ_API_KEY'),
-  groqModel: optional('GROQ_MODEL', 'llama-3.3-70b-versatile'),
+  localLlmBaseUrl: optional('LOCAL_LLM_BASE_URL', 'http://localhost:8080/v1'),
+  localLlmApiKey: optional('LOCAL_LLM_API_KEY'),
+  localLlmModel: optional('LOCAL_LLM_MODEL', 'local-llama'),
   enableSemanticRag: optional('ENABLE_SEMANTIC_RAG', 'false') === 'true',
 
   // Đặt 'true' nếu deploy frontend và backend ở 2 domain khác nhau
   // (cookie cần SameSite=None; Secure để gửi cross-site).
   crossSiteCookie: optional('CROSS_SITE_COOKIE', 'false') === 'true',
 
-  // Trình chạy code C/C++ qua Wandbox (miễn phí, không cần key).
-  wandboxUrl: optional('WANDBOX_URL', 'https://wandbox.org'),
+  // Trình chạy code C/C++ qua Judge0 CE tự host local.
+  judge0Url: optional('JUDGE0_URL', 'http://localhost:2358'),
 
   smtpHost: optional('SMTP_HOST'),
   smtpPort: Number(optional('SMTP_PORT', '465')),
@@ -50,6 +51,7 @@ export const env = {
   emailjsServiceId: optional('EMAILJS_SERVICE_ID'),
   emailjsTemplateVerifyId: optional('EMAILJS_TEMPLATE_VERIFY_ID'),
   emailjsTemplateResetId: optional('EMAILJS_TEMPLATE_RESET_ID'),
+  emailjsTemplateNotificationId: optional('EMAILJS_TEMPLATE_NOTIFICATION_ID'),
   emailjsPublicKey: optional('EMAILJS_PUBLIC_KEY'),
   emailjsPrivateKey: optional('EMAILJS_PRIVATE_KEY'),
 
@@ -65,6 +67,9 @@ export const env = {
   sepayPgMerchantId: optional('SEPAY_PG_MERCHANT_ID'),
   sepayPgSecretKey: optional('SEPAY_PG_SECRET_KEY'),
   sepayPgEnv: optional('SEPAY_PG_ENV', 'sandbox'),
+  paymentDemoEnabled:
+    optional('PAYMENT_DEMO_ENABLED', 'false') === 'true' &&
+    optional('NODE_ENV', 'development') !== 'production',
 
   get isProduction() {
     return this.nodeEnv === 'production';

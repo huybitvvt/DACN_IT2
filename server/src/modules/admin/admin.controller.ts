@@ -4,9 +4,11 @@ import { asyncHandler } from '../../utils/asyncHandler.js';
 import * as svc from './admin.service.js';
 import {
   courseSchema,
+  contestSchema,
   exerciseSchema,
   lessonSchema,
   quizSchema,
+  rewardClaimStatusSchema,
 } from './admin.schema.js';
 
 const idParam = (req: Request) => z.string().min(1).parse(req.params.id);
@@ -81,6 +83,17 @@ export const listUsers = asyncHandler(async (_req, res: Response) => {
   res.json({ users: await svc.listUsers() });
 });
 
+export const listRetentionRisks = asyncHandler(async (_req, res: Response) => {
+  res.json(await svc.listRetentionRisks());
+});
+
+export const assignRetentionIntervention = asyncHandler(async (req: Request, res: Response) => {
+  const userId = idParam(req);
+  res.status(201).json({
+    intervention: await svc.assignRetentionIntervention(userId, req.user!.sub),
+  });
+});
+
 // ---- Purchases ----
 export const listPurchases = asyncHandler(async (req: Request, res: Response) => {
   const status = z.enum(['PENDING', 'PAID']).optional().parse(req.query.status || undefined);
@@ -91,4 +104,31 @@ export const listPurchases = asyncHandler(async (req: Request, res: Response) =>
 export const markPurchasePaid = asyncHandler(async (req: Request, res: Response) => {
   const purchase = await svc.markPurchasePaid(idParam(req));
   res.json({ purchase });
+});
+
+// ---- Contests ----
+export const listContests = asyncHandler(async (_req, res: Response) => {
+  res.json({ contests: await svc.listContests() });
+});
+
+export const createContest = asyncHandler(async (req: Request, res: Response) => {
+  res.status(201).json({ contest: await svc.createContest(contestSchema.parse(req.body)) });
+});
+
+export const updateContest = asyncHandler(async (req: Request, res: Response) => {
+  res.json({ contest: await svc.updateContest(idParam(req), contestSchema.parse(req.body)) });
+});
+
+export const deleteContest = asyncHandler(async (req: Request, res: Response) => {
+  await svc.deleteContest(idParam(req));
+  res.json({ success: true });
+});
+
+export const listRewardClaims = asyncHandler(async (_req, res: Response) => {
+  res.json({ claims: await svc.listRewardClaims() });
+});
+
+export const updateRewardClaimStatus = asyncHandler(async (req: Request, res: Response) => {
+  const claim = await svc.updateRewardClaimStatus(idParam(req), rewardClaimStatusSchema.parse(req.body));
+  res.json({ claim });
 });
