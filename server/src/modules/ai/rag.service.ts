@@ -9,6 +9,75 @@ export interface RetrievedLesson {
   rank: number;
 }
 
+const FOCUS_STOP_WORDS = new Set([
+  'các',
+  'cho',
+  'của',
+  'được',
+  'giải',
+  'là',
+  'một',
+  'này',
+  'như',
+  'thế',
+  'trong',
+  'và',
+  'về',
+]);
+
+function focusTokens(text: string): string[] {
+  return [
+    ...new Set(
+      text
+        .toLowerCase()
+        .replace(/[^\p{L}\p{N}_+#]/gu, ' ')
+        .split(/\s+/)
+        .filter((token) => token.length >= 2 && !FOCUS_STOP_WORDS.has(token)),
+    ),
+  ];
+}
+
+// Chọn đoạn trong bài học có nhiều từ khóa trùng với câu hỏi. Cách này vừa
+// giảm prompt vừa tránh việc luôn lấy phần mở đầu dù câu hỏi nằm cuối bài.
+export function focusLessonContent(
+  contentMarkdown: string,
+  question: string,
+  maxChars = 700,
+): string {
+  if (contentMarkdown.length <= maxChars) return contentMarkdown;
+
+  const queryTokens = focusTokens(question);
+  const paragraphs = contentMarkdown
+    .split(/\n{2,}/)
+    .flatMap((paragraph) => {
+      if (paragraph.length <= maxChars) return [paragraph];
+      const chunks: string[] = [];
+      for (let start = 0; start < paragraph.length; start += maxChars) {
+        chunks.push(paragraph.slice(start, start + maxChars));
+      }
+      return chunks;
+    })
+    .filter(Boolean);
+
+  if (queryTokens.length === 0 || paragraphs.length === 0) {
+    return contentMarkdown.slice(0, maxChars);
+  }
+
+  const best = paragraphs.reduce(
+    (current, paragraph) => {
+      const normalized = paragraph.toLowerCase();
+      const score = queryTokens.reduce(
+        (total, token) => total + (normalized.includes(token) ? 1 : 0),
+        0,
+      );
+      return score > current.score ? { paragraph, score } : current;
+    },
+    { paragraph: paragraphs[0], score: -1 },
+  );
+
+  return best.paragraph.slice(0, maxChars);
+}
+
 // Chuyển câu hỏi người dùng thành chuỗi tsquery dạng OR giữa các từ.
 // Dùng config 'simple' để không phụ thuộc ngôn ngữ (phù hợp tiếng Việt + code).
 function buildTsQuery(question: string): string {
@@ -79,12 +148,20 @@ async function fullTextSearch(question: string, k: number): Promise<RetrievedLes
 }
 
 // Ghép ngữ cảnh từ các bài học truy xuất được, kèm nguồn để AI dẫn chiếu.
-export function buildContext(lessons: RetrievedLesson[]): string {
+export function buildContext(
+  lessons: RetrievedLesson[],
+  question = '',
+  maxCharsPerLesson = 700,
+): string {
   if (lessons.length === 0) return '';
   return lessons
     .map(
       (l, i) =>
-        `[Nguồn ${i + 1}: ${l.courseTitle} - ${l.title}]\n${l.contentMarkdown.slice(0, 1500)}`,
+        `[Nguồn ${i + 1}: ${l.courseTitle} - ${l.title}]\n${focusLessonContent(
+          l.contentMarkdown,
+          question,
+          maxCharsPerLesson,
+        )}`,
     )
     .join('\n\n---\n\n');
 }

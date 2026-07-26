@@ -103,7 +103,7 @@ export async function sendChatStream(
   await consumeTokenStream(
     '/ai/chat/stream',
     { message, lessonId: options.lessonId, history: options.history },
-    185000,
+    50000,
     onToken,
   );
 }

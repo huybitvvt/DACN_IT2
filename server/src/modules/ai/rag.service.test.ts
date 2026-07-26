@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { buildContext, looksInScope, type RetrievedLesson } from './rag.service.js';
+import {
+  buildContext,
+  focusLessonContent,
+  looksInScope,
+  type RetrievedLesson,
+} from './rag.service.js';
 
 describe('looksInScope - guardrail phụ', () => {
   it('nhận diện câu hỏi trong phạm vi lập trình', () => {
@@ -35,5 +40,18 @@ describe('buildContext', () => {
     expect(ctx).toContain('Python');
     expect(ctx).toContain('Hello World');
     expect(ctx).toContain('print()');
+  });
+
+  it('chọn đoạn liên quan thay vì luôn lấy phần mở đầu', () => {
+    const content = [
+      'Giới thiệu chung về ngôn ngữ và lịch sử phát triển.'.repeat(10),
+      'Dùng hàm print() để in chuỗi ra màn hình trong Python.',
+      'Phần bài tập thực hành.'.repeat(10),
+    ].join('\n\n');
+
+    const focused = focusLessonContent(content, 'hàm print Python', 200);
+
+    expect(focused).toContain('print()');
+    expect(focused.length).toBeLessThanOrEqual(200);
   });
 });

@@ -23,6 +23,25 @@ async function capture(page: Page, testInfo: TestInfo, name: string) {
   });
 }
 
+test('chatbot phân biệt câu lệnh Python đúng và sai', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Mở trợ lý AI' }).click();
+
+  const input = page.getByLabel('Nhập câu hỏi cho trợ lý AI');
+  await input.fill(`print'("Hello, World!")`);
+  await page.getByRole('button', { name: 'Gửi' }).click();
+  await expect(page.getByText('Đoạn code này sai cú pháp Python.')).toBeVisible({
+    timeout: 10_000,
+  });
+  await expect(page.getByText('Cách đúng: `print("Hello, World!")`.')).toBeVisible();
+
+  await input.fill('print("Hello, World!")');
+  await page.getByRole('button', { name: 'Gửi' }).click();
+  await expect(page.getByText('Đoạn code này đúng cú pháp Python.')).toBeVisible({
+    timeout: 10_000,
+  });
+});
+
 test('học viên xem gói cứu nhịp và trung tâm thông báo', async ({ page }, testInfo) => {
   await login(page, 'roi.nhip@lpp.local', 'hocvien123');
 
