@@ -111,6 +111,49 @@ describe('gradeSubmission', () => {
     expect(result.status).toBe('ERROR');
     expect(result.compileError).toContain('error');
   });
+
+  it('ERROR và dừng sớm khi Python trả lỗi qua stderr', async () => {
+    mockedPrisma.exercise.findUnique.mockResolvedValue(
+      exerciseWith([
+        { input: '', expectedOutput: 'Hello, World!', isHidden: false },
+        { input: 'unused', expectedOutput: 'unused', isHidden: true },
+      ]),
+    );
+    mockedExec.mockResolvedValue({
+      stdout: '',
+      stderr: 'SyntaxError: invalid syntax',
+      compileOutput: '',
+      status: 'Runtime Error (NZEC)',
+      timeMs: null,
+    });
+
+    const result = await gradeSubmission({
+      exerciseId: 'ex1',
+      sourceCode: `print'("Hello, World!")`,
+    });
+
+    expect(result.status).toBe('ERROR');
+    expect(result.compileError).toContain('SyntaxError');
+    expect(mockedExec).toHaveBeenCalledTimes(1);
+  });
+
+  it('không coi stderr là lỗi khi Judge0 báo chạy thành công', async () => {
+    mockedPrisma.exercise.findUnique.mockResolvedValue(
+      exerciseWith([{ input: '', expectedOutput: 'ok', isHidden: false }]),
+    );
+    mockedExec.mockResolvedValue({
+      stdout: 'ok',
+      stderr: 'diagnostic message',
+      compileOutput: '',
+      status: 'Thành công',
+      timeMs: 10,
+    });
+
+    const result = await gradeSubmission({ exerciseId: 'ex1', sourceCode: 'print("ok")' });
+
+    expect(result.status).toBe('PASSED');
+    expect(result.compileError).toBeUndefined();
+  });
 });
 
 describe('getExerciseForLearner', () => {

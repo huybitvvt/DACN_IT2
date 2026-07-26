@@ -10,11 +10,12 @@ import {
 } from '@/lib/exerciseApi';
 import { getErrorMessage } from '@/lib/api';
 import { renderMarkdown } from '@/lib/markdown';
-import { sendChat } from '@/lib/aiApi';
+import { explainExerciseErrorStream } from '@/lib/aiApi';
 import { useAuth } from '@/context/AuthContext';
 import CodeEditor from '@/components/CodeEditor';
 import Spinner from '@/components/ui/Spinner';
 import Alert from '@/components/ui/Alert';
+import { Bot, Loader2 } from 'lucide-react';
 
 export default function ExercisePage() {
   const { id } = useParams<{ id: string }>();
@@ -126,7 +127,7 @@ export default function ExercisePage() {
 
       {error && <Alert type="error">{error}</Alert>}
 
-      {result && <ResultPanel result={result} />}
+      {result && <ResultPanel result={result} exercise={exercise} sourceCode={code} />}
 
       {/* Lịch sử bài nộp (chỉ khi đã đăng nhập và có lịch sử) */}
       {user && history.length > 0 && (
@@ -180,23 +181,45 @@ export default function ExercisePage() {
   );
 }
 
-function ResultPanel({ result }: { result: SubmitResult }) {
+function ResultPanel({
+  result,
+  exercise,
+  sourceCode,
+}: {
+  result: SubmitResult;
+  exercise: ExerciseDetail;
+  sourceCode: string;
+}) {
   const isPass = result.status === 'PASSED';
   const [explaining, setExplaining] = useState(false);
   const [explanation, setExplanation] = useState('');
 
-  // Gửi thông báo lỗi cho AI để được giải thích bằng tiếng Việt (Yêu cầu 5.5).
+  // Gửi code và các test công khai bị sai qua luồng phân tích nhanh, không dùng RAG.
   async function explainError() {
     setExplaining(true);
     setExplanation('');
-    const errorText = result.compileError
-      ? `Code của em bị lỗi biên dịch:\n${result.compileError}\nGiải thích nguyên nhân và cách sửa giúp em.`
-      : 'Bài làm của em chưa qua hết test case. Gợi ý hướng kiểm tra và sửa lỗi logic giúp em.';
     try {
-      const res = await sendChat(errorText);
-      setExplanation(res.reply);
-    } catch {
-      setExplanation('Không lấy được giải thích từ AI. Vui lòng thử lại qua khung chat.');
+      await explainExerciseErrorStream(
+        {
+          language: exercise.language,
+          title: exercise.title,
+          sourceCode,
+          compileError: result.compileError,
+          failedTests: result.results
+            .filter((test) => !test.passed && !test.isHidden)
+            .slice(0, 2)
+            .map((test) => ({
+              input: test.input ?? '',
+              expectedOutput: test.expectedOutput ?? '',
+              actualOutput: test.actualOutput ?? '',
+            })),
+        },
+        (token) => setExplanation((current) => current + token),
+      );
+    } catch (err) {
+      setExplanation(
+        getErrorMessage(err, 'Không lấy được giải thích từ AI. Vui lòng xem lỗi bên dưới.'),
+      );
     } finally {
       setExplaining(false);
     }
@@ -208,7 +231,7 @@ function ResultPanel({ result }: { result: SubmitResult }) {
         {isPass
           ? `Đạt! Bạn đã qua ${result.passed}/${result.total} test case.`
           : result.status === 'ERROR'
-            ? 'Lỗi biên dịch — xem chi tiết bên dưới.'
+            ? 'Lỗi khi chạy hoặc biên dịch — xem chi tiết bên dưới.'
             : `Chưa đạt: qua ${result.passed}/${result.total} test case.`}
       </Alert>
 
@@ -217,14 +240,23 @@ function ResultPanel({ result }: { result: SubmitResult }) {
           <button
             onClick={explainError}
             disabled={explaining}
-            className="text-sm px-3 py-1.5 rounded-lg border border-brand-300 text-brand-700 hover:bg-brand-50 disabled:opacity-60 dark:border-brand-500/40 dark:text-brand-300 dark:hover:bg-brand-500/10"
+            aria-busy={explaining}
+            className="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg border border-brand-300 text-brand-700 hover:bg-brand-50 disabled:opacity-60 dark:border-brand-500/40 dark:text-brand-300 dark:hover:bg-brand-500/10"
           >
-            {explaining ? 'AI đang phân tích...' : '🤖 Nhờ AI giải thích lỗi'}
+            {explaining ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Bot className="h-4 w-4" />
+            )}
+            {explaining ? 'AI đang phân tích...' : 'Nhờ AI giải thích lỗi'}
           </button>
-          {explanation && (
-            <pre className="mt-2 p-3 rounded-lg text-sm whitespace-pre-wrap bg-blue-50 text-blue-900 border border-blue-200 dark:bg-sky-500/10 dark:text-sky-200 dark:border-sky-500/30">
-              {explanation}
-            </pre>
+          {(explaining || explanation) && (
+            <div
+              aria-live="polite"
+              className="mt-2 p-3 rounded-lg text-sm whitespace-pre-wrap bg-blue-50 text-blue-900 border border-blue-200 dark:bg-sky-500/10 dark:text-sky-200 dark:border-sky-500/30"
+            >
+              {explanation || 'Đã nhận code và kết quả test. Llama local đang kiểm tra...'}
+            </div>
           )}
         </div>
       )}

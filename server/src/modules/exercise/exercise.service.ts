@@ -90,11 +90,14 @@ export async function gradeSubmission(params: {
       stdin: tc.input,
     });
 
-    // Lỗi biên dịch -> dừng sớm, tất cả test coi như không đạt.
-    if (exec.compileOutput) {
-      compileError = exec.compileOutput;
+    // Với ngôn ngữ thông dịch như Python, lỗi cú pháp/runtime nằm trong stderr.
+    // Dừng ngay để không chạy lặp cùng một lỗi cho các test còn lại.
+    const executionError =
+      exec.compileOutput || (exec.status !== 'Thành công' ? exec.stderr : '');
+    if (executionError) {
+      compileError = executionError;
       results.push({ index: i, passed: false, isHidden: tc.isHidden });
-      continue;
+      break;
     }
 
     const actual = normalizeOutput(exec.stdout);
