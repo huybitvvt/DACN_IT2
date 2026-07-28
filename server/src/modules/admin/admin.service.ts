@@ -1,6 +1,10 @@
 import { prisma } from '../../db/prisma.js';
 import { AppError } from '../../utils/AppError.js';
 import { createNotification } from '../notification/notification.service.js';
+import {
+  buildRetentionScoreInputAt,
+  type RetentionAnalyticsData,
+} from '../retention/retention-analytics.js';
 import { calculateRetentionHealth } from '../retention/retention-score.js';
 import { getRetentionPlan } from '../retention/retention.service.js';
 import { createLearningIntervention } from '../retention/intervention.service.js';
@@ -49,7 +53,10 @@ export async function deleteLesson(id: string) {
 
 // ---- Exercises (kèm test cases) ----
 export const getExercise = (id: string) =>
-  prisma.exercise.findUnique({ where: { id }, include: { testCases: { orderBy: { order: 'asc' } } } });
+  prisma.exercise.findUnique({
+    where: { id },
+    include: { testCases: { orderBy: { order: 'asc' } } },
+  });
 
 export const listExercises = (lessonId?: string) =>
   prisma.exercise.findMany({
@@ -156,19 +163,18 @@ export const listUsers = () =>
     orderBy: { createdAt: 'desc' },
   });
 
-function daysBetween(start: Date, end: Date) {
-  const startDay = Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate());
-  const endDay = Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate());
-  return Math.max(0, Math.floor((endDay - startDay) / 86400000));
-}
-
-function riskLevel(score: number) {
-  if (score >= 75) return 'LOW';
-  if (score >= 45) return 'MEDIUM';
+function adminRiskLevel(level: 'ON_TRACK' | 'WATCH' | 'AT_RISK') {
+  if (level === 'ON_TRACK') return 'LOW';
+  if (level === 'WATCH') return 'MEDIUM';
   return 'HIGH';
 }
 
-function interventionAction(params: { daysInactive: number; percent: number; streak: number; pendingRewards: number }) {
+function interventionAction(params: {
+  daysInactive: number;
+  percent: number;
+  streak: number;
+  pendingRewards: number;
+}) {
   if (params.pendingRewards > 0) return 'Duyệt thưởng sớm để tạo động lực quay lại.';
   if (params.daysInactive >= 7) return 'Liên hệ trực tiếp và gợi ý nhiệm vụ 15 phút dễ nhất.';
   if (params.daysInactive >= 3) return 'Gửi nhắc học kèm lợi ích giữ streak/ranking.';
@@ -177,122 +183,155 @@ function interventionAction(params: { daysInactive: number; percent: number; str
   return 'Theo dõi thêm và khuyến khích tham gia mùa thi.';
 }
 
-async function countCourseItems(courseId: string): Promise<number> {
-  const lessons = await prisma.lesson.findMany({
-    where: { courseId },
-    select: {
-      _count: { select: { exercises: true } },
-      quiz: { select: { id: true } },
-    },
-  });
-  return lessons.reduce((sum, lesson) => sum + 1 + lesson._count.exercises + (lesson.quiz ? 1 : 0), 0);
-}
-
 export async function listRetentionRisks() {
   const now = new Date();
   const sinceWeek = new Date(now.getTime() - 7 * 86400000);
-  const paidPurchases = await prisma.coursePurchase.findMany({
-    where: { status: 'PAID', user: { role: 'LEARNER' } },
-    include: {
-      course: { select: { id: true, slug: true, title: true } },
-      user: {
-        select: {
-          id: true,
-          email: true,
-          displayName: true,
-          streakCount: true,
-          lastActiveDate: true,
-          progress: { where: { completed: true }, select: { courseId: true } },
-          submissions: {
-            where: { createdAt: { gte: sinceWeek } },
-            select: { id: true, status: true },
+  const sinceAnalytics = new Date(now.getTime() - 56 * 86400000);
+  const [users, paidCourses] = await Promise.all([
+    prisma.user.findMany({
+      where: { role: 'LEARNER', purchases: { some: { status: 'PAID' } } },
+      select: {
+        id: true,
+        email: true,
+        displayName: true,
+        lastActiveDate: true,
+        purchases: {
+          where: { status: 'PAID' },
+          select: { courseId: true },
+        },
+        progress: {
+          where: { completed: true },
+          select: { courseId: true, itemType: true, completedAt: true },
+        },
+        submissions: {
+          where: { createdAt: { gte: sinceAnalytics } },
+          select: {
+            exerciseId: true,
+            status: true,
+            createdAt: true,
+            exercise: { select: { lesson: { select: { courseId: true } } } },
           },
-          quizAttempts: {
-            where: { createdAt: { gte: sinceWeek } },
-            select: { id: true },
+        },
+        quizAttempts: {
+          where: { createdAt: { gte: sinceAnalytics } },
+          select: {
+            quizId: true,
+            score: true,
+            total: true,
+            createdAt: true,
+            quiz: { select: { lesson: { select: { courseId: true } } } },
           },
-          rewardClaims: {
-            where: { status: 'PENDING' },
-            select: { id: true },
-          },
-          badges: { select: { id: true } },
-          interventions: {
-            orderBy: { createdAt: 'desc' },
-            take: 1,
-            select: {
-              id: true,
-              status: true,
-              source: true,
-              baselineHealthScore: true,
-              targetMissions: true,
-              completedMissions: true,
-              startsAt: true,
-              dueAt: true,
-              completedAt: true,
-              outcome: true,
-            },
+        },
+        rewardClaims: {
+          where: { status: 'PENDING' },
+          select: { id: true },
+        },
+        interventions: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: {
+            id: true,
+            status: true,
+            source: true,
+            baselineHealthScore: true,
+            targetMissions: true,
+            completedMissions: true,
+            startsAt: true,
+            dueAt: true,
+            completedAt: true,
+            outcome: true,
           },
         },
       },
-    },
-    orderBy: { paidAt: 'desc' },
-  });
+    }),
+    prisma.course.findMany({
+      where: { purchases: { some: { status: 'PAID', user: { role: 'LEARNER' } } } },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        lessons: {
+          select: {
+            _count: { select: { exercises: true } },
+            quiz: { select: { id: true } },
+          },
+        },
+      },
+    }),
+  ]);
 
-  const courseTotals = new Map<string, number>();
-  for (const purchase of paidPurchases) {
-    if (!courseTotals.has(purchase.courseId)) {
-      courseTotals.set(purchase.courseId, await countCourseItems(purchase.courseId));
-    }
-  }
-
-  const byUser = new Map<
-    string,
-    {
-      user: (typeof paidPurchases)[number]['user'];
-      courses: { id: string; slug: string; title: string; completed: number; total: number; percent: number }[];
-      paidCourseIds: Set<string>;
-    }
-  >();
-
-  for (const purchase of paidPurchases) {
-    const row =
-      byUser.get(purchase.userId) ??
+  const courseCatalog = new Map(
+    paidCourses.map((course) => [
+      course.id,
       {
-        user: purchase.user,
-        courses: [],
-        paidCourseIds: new Set<string>(),
-      };
-    if (!row.paidCourseIds.has(purchase.courseId)) {
-      const total = courseTotals.get(purchase.courseId) ?? 0;
-      const completed = purchase.user.progress.filter((item) => item.courseId === purchase.courseId).length;
-      row.courses.push({
-        id: purchase.course.id,
-        slug: purchase.course.slug,
-        title: purchase.course.title,
-        completed: Math.min(completed, total),
-        total,
-        percent: total === 0 ? 0 : Math.min(100, Math.round((completed / total) * 100)),
-      });
-      row.paidCourseIds.add(purchase.courseId);
-    }
-    byUser.set(purchase.userId, row);
-  }
+        id: course.id,
+        slug: course.slug,
+        title: course.title,
+        total: course.lessons.reduce(
+          (sum, lesson) => sum + 1 + lesson._count.exercises + (lesson.quiz ? 1 : 0),
+          0,
+        ),
+      },
+    ]),
+  );
 
-  const learners = [...byUser.values()].map(({ user, courses }) => {
+  const learners = users.map((user) => {
+    const paidCourseIds = new Set(user.purchases.map((purchase) => purchase.courseId));
+    const courses = [...paidCourseIds].flatMap((courseId) => {
+      const course = courseCatalog.get(courseId);
+      if (!course) return [];
+      const completed = user.progress.filter((item) => item.courseId === courseId).length;
+      return [
+        {
+          ...course,
+          completed: Math.min(completed, course.total),
+          percent:
+            course.total === 0
+              ? 0
+              : Math.min(100, Math.round((completed / course.total) * 100)),
+        },
+      ];
+    });
     const totalItems = courses.reduce((sum, course) => sum + course.total, 0);
     const completedItems = courses.reduce((sum, course) => sum + course.completed, 0);
-    const overallPercent = totalItems === 0 ? 0 : Math.round((completedItems / totalItems) * 100);
-    const daysInactive = user.lastActiveDate ? daysBetween(user.lastActiveDate, now) : 99;
-    const passedSubmissionsWeek = user.submissions.filter((submission) => submission.status === 'PASSED').length;
-    const scoreResult = calculateRetentionHealth({
-      daysInactive,
-      overallPercent,
-      streak: user.streakCount,
-      recentPassedSubmissions: passedSubmissionsWeek,
-      recentQuizAttempts: user.quizAttempts.length,
-      badges: user.badges.length,
-    });
+    const eligibleProgress = user.progress.filter((item) => paidCourseIds.has(item.courseId));
+    const eligibleSubmissions = user.submissions.filter((item) =>
+      paidCourseIds.has(item.exercise.lesson.courseId),
+    );
+    const eligibleQuizAttempts = user.quizAttempts.filter((item) =>
+      paidCourseIds.has(item.quiz.lesson.courseId),
+    );
+    const analyticsData: RetentionAnalyticsData = {
+      totalItems,
+      lastActiveDate: user.lastActiveDate,
+      progress: eligibleProgress,
+      submissions: eligibleSubmissions.map((item) => ({
+        exerciseId: item.exerciseId,
+        status: item.status,
+        createdAt: item.createdAt,
+      })),
+      quizAttempts: eligibleQuizAttempts.map((item) => ({
+        quizId: item.quizId,
+        score: item.score,
+        total: item.total,
+        createdAt: item.createdAt,
+      })),
+    };
+    const scoreInput = buildRetentionScoreInputAt(analyticsData, now);
+    const scoreResult = calculateRetentionHealth(scoreInput);
     const healthScore = scoreResult.score;
+    const overallPercent = scoreInput.overallPercent;
+    const daysInactive = scoreInput.daysInactive;
+    const passedSubmissionsWeek = new Set(
+      eligibleSubmissions
+        .filter((submission) => submission.status === 'PASSED' && submission.createdAt >= sinceWeek)
+        .map((submission) => submission.exerciseId),
+    ).size;
+    const quizAttemptsWeek = new Set(
+      eligibleQuizAttempts
+        .filter((attempt) => attempt.createdAt >= sinceWeek)
+        .map((attempt) => attempt.quizId),
+    ).size;
     const weakestCourse = [...courses].sort((a, b) => a.percent - b.percent)[0] ?? null;
     const pendingRewards = user.rewardClaims.length;
 
@@ -303,22 +342,23 @@ export async function listRetentionRisks() {
         displayName: user.displayName,
       },
       healthScore,
-      riskLevel: riskLevel(healthScore),
+      riskLevel: adminRiskLevel(scoreResult.riskLevel),
       scoreFormula: {
         version: scoreResult.formulaVersion,
         factors: scoreResult.factors,
         reasons: scoreResult.reasons,
       },
       daysInactive,
-      streak: user.streakCount,
+      streak: scoreInput.effectiveStreak,
       overallPercent,
       paidCourses: courses.length,
       completedItems,
       totalItems,
       recent: {
-        submissions: user.submissions.length,
+        submissions: eligibleSubmissions.filter((submission) => submission.createdAt >= sinceWeek)
+          .length,
         passedSubmissions: passedSubmissionsWeek,
-        quizAttempts: user.quizAttempts.length,
+        quizAttempts: quizAttemptsWeek,
       },
       pendingRewards,
       weakestCourse,
@@ -326,7 +366,7 @@ export async function listRetentionRisks() {
       suggestedAction: interventionAction({
         daysInactive,
         percent: overallPercent,
-        streak: user.streakCount,
+        streak: scoreInput.effectiveStreak,
         pendingRewards,
       }),
     };
@@ -451,7 +491,13 @@ export async function createContest(data: ContestInput) {
     data: {
       ...rest,
       courseSlug: courseSlug || null,
-      rewards: { create: rewards.map((r) => ({ ...r, valueVnd: r.valueVnd ?? null, percentOff: r.percentOff ?? null })) },
+      rewards: {
+        create: rewards.map((r) => ({
+          ...r,
+          valueVnd: r.valueVnd ?? null,
+          percentOff: r.percentOff ?? null,
+        })),
+      },
       problems: {
         create: problems.map((p, i) => ({
           problemType: p.problemType,
@@ -482,7 +528,13 @@ export async function updateContest(id: string, data: ContestInput) {
     data: {
       ...rest,
       courseSlug: courseSlug || null,
-      rewards: { create: rewards.map((r) => ({ ...r, valueVnd: r.valueVnd ?? null, percentOff: r.percentOff ?? null })) },
+      rewards: {
+        create: rewards.map((r) => ({
+          ...r,
+          valueVnd: r.valueVnd ?? null,
+          percentOff: r.percentOff ?? null,
+        })),
+      },
       problems: {
         create: problems.map((p, i) => ({
           problemType: p.problemType,
@@ -511,7 +563,16 @@ export const listRewardClaims = () =>
     include: {
       user: { select: { id: true, email: true, displayName: true } },
       contest: { select: { id: true, slug: true, title: true } },
-      reward: { select: { id: true, title: true, description: true, rewardType: true, percentOff: true, valueVnd: true } },
+      reward: {
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          rewardType: true,
+          percentOff: true,
+          valueVnd: true,
+        },
+      },
     },
     orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
     take: 100,
@@ -529,14 +590,26 @@ export async function updateRewardClaimStatus(id: string, data: RewardClaimStatu
     include: {
       user: { select: { id: true, email: true, displayName: true } },
       contest: { select: { id: true, slug: true, title: true } },
-      reward: { select: { id: true, title: true, description: true, rewardType: true, percentOff: true, valueVnd: true } },
+      reward: {
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          rewardType: true,
+          percentOff: true,
+          valueVnd: true,
+        },
+      },
     },
   });
   if (claim.status !== 'PENDING') {
     await createNotification({
       userId: claim.user.id,
       type: 'REWARD',
-      title: claim.status === 'APPROVED' ? 'Yêu cầu nhận thưởng đã được duyệt' : 'Yêu cầu nhận thưởng chưa được duyệt',
+      title:
+        claim.status === 'APPROVED'
+          ? 'Yêu cầu nhận thưởng đã được duyệt'
+          : 'Yêu cầu nhận thưởng chưa được duyệt',
       message:
         claim.note ||
         (claim.status === 'APPROVED'

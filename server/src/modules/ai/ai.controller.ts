@@ -1,11 +1,7 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { asyncHandler } from '../../utils/asyncHandler.js';
-import {
-  handleChat,
-  handleChatStream,
-  handleExerciseErrorStream,
-} from './ai.service.js';
+import { handleChat, handleChatStream, handleExerciseErrorStream } from './ai.service.js';
 
 const chatSchema = z.object({
   message: z.string().min(1, 'Vui lòng nhập câu hỏi.').max(2000),
@@ -22,7 +18,7 @@ const chatSchema = z.object({
 });
 
 const exerciseErrorSchema = z.object({
-  language: z.enum(['SQL', 'C', 'CPP', 'PYTHON']),
+  language: z.string().trim().min(1).max(80),
   title: z.string().min(1).max(200),
   sourceCode: z.string().min(1).max(10000),
   compileError: z.string().max(4000).optional(),

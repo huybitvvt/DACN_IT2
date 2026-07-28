@@ -56,8 +56,17 @@ function defaultForm(): ContestForm {
     startsAt: toInputDate(now.toISOString()),
     endsAt: toInputDate(end.toISOString()),
     durationMinutes: 45,
-    scoringNote: 'Điểm = bài học/bài tập/quiz hoàn thành + điểm phòng thi + submission pass + streak + huy hiệu.',
-    rewards: [{ ...emptyReward, title: 'Hoàn 50% học phí', description: 'Top 1 được hoàn 50% học phí.', rewardType: 'TUITION_REFUND', percentOff: 50 }],
+    scoringNote:
+      'Thang 1.000 điểm: bài học 200, bài code 250, quiz 150, phòng thi 300 và độ đều 100. Chỉ tính hoạt động trong mùa; mỗi bài dùng kết quả tốt nhất.',
+    rewards: [
+      {
+        ...emptyReward,
+        title: 'Hoàn 50% học phí',
+        description: 'Top 1 được hoàn 50% học phí.',
+        rewardType: 'TUITION_REFUND',
+        percentOff: 50,
+      },
+    ],
     problems: [{ ...emptyProblem, title: 'Bài code trong phòng thi' }],
   };
 }
@@ -74,7 +83,10 @@ export default function AdminContests() {
   async function load() {
     setLoading(true);
     try {
-      const [contestRows, claimRows] = await Promise.all([adminListContests(), adminListRewardClaims()]);
+      const [contestRows, claimRows] = await Promise.all([
+        adminListContests(),
+        adminListRewardClaims(),
+      ]);
       setContests(contestRows);
       setClaims(claimRows);
     } catch (err) {
@@ -114,7 +126,9 @@ export default function AdminContests() {
   function updateProblem(index: number, patch: Partial<AdminContestProblem>) {
     setForm((current) => ({
       ...current,
-      problems: current.problems.map((problem, i) => (i === index ? { ...problem, ...patch } : problem)),
+      problems: current.problems.map((problem, i) =>
+        i === index ? { ...problem, ...patch } : problem,
+      ),
     }));
   }
 
@@ -216,7 +230,9 @@ export default function AdminContests() {
             <span className="font-medium text-gray-700 dark:text-gray-200">Trạng thái</span>
             <select
               value={form.status}
-              onChange={(e) => setForm((c) => ({ ...c, status: e.target.value as ContestForm['status'] }))}
+              onChange={(e) =>
+                setForm((c) => ({ ...c, status: e.target.value as ContestForm['status'] }))
+              }
               className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 dark:border-gray-700 dark:bg-ink-900 dark:text-white"
             >
               <option value="UPCOMING">Sắp diễn ra</option>
@@ -252,7 +268,9 @@ export default function AdminContests() {
             />
           </label>
           <label className="space-y-1 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">Thời lượng phòng thi (phút)</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">
+              Thời lượng phòng thi (phút)
+            </span>
             <input
               type="number"
               value={form.durationMinutes}
@@ -287,14 +305,22 @@ export default function AdminContests() {
             <h3 className="font-semibold text-gray-900 dark:text-gray-100">Đề phòng thi</h3>
             <button
               type="button"
-              onClick={() => setForm((c) => ({ ...c, problems: [...c.problems, { ...emptyProblem, order: c.problems.length }] }))}
+              onClick={() =>
+                setForm((c) => ({
+                  ...c,
+                  problems: [...c.problems, { ...emptyProblem, order: c.problems.length }],
+                }))
+              }
               className="text-sm font-semibold text-brand-600 hover:text-brand-700 dark:text-brand-300"
             >
               Thêm câu thi
             </button>
           </div>
           {form.problems.map((problem, index) => (
-            <div key={index} className="grid gap-2 rounded-lg border border-gray-200 p-3 dark:border-gray-700 md:grid-cols-6">
+            <div
+              key={index}
+              className="grid gap-2 rounded-lg border border-gray-200 p-3 dark:border-gray-700 md:grid-cols-6"
+            >
               <select
                 value={problem.problemType}
                 onChange={(e) =>
@@ -310,11 +336,17 @@ export default function AdminContests() {
                 <option value="QUIZ">Quiz</option>
               </select>
               <input
-                value={problem.problemType === 'EXERCISE' ? problem.exerciseId ?? '' : problem.quizId ?? ''}
+                value={
+                  problem.problemType === 'EXERCISE'
+                    ? (problem.exerciseId ?? '')
+                    : (problem.quizId ?? '')
+                }
                 onChange={(e) =>
                   updateProblem(
                     index,
-                    problem.problemType === 'EXERCISE' ? { exerciseId: e.target.value } : { quizId: e.target.value },
+                    problem.problemType === 'EXERCISE'
+                      ? { exerciseId: e.target.value }
+                      : { quizId: e.target.value },
                   )
                 }
                 className="rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-700 dark:bg-ink-900 dark:text-white md:col-span-2"
@@ -342,7 +374,9 @@ export default function AdminContests() {
               />
               <button
                 type="button"
-                onClick={() => setForm((c) => ({ ...c, problems: c.problems.filter((_, i) => i !== index) }))}
+                onClick={() =>
+                  setForm((c) => ({ ...c, problems: c.problems.filter((_, i) => i !== index) }))
+                }
                 className="inline-flex items-center justify-center rounded-lg border border-rose-200 px-3 py-2 text-rose-600 hover:bg-rose-50 dark:border-rose-900/60 dark:hover:bg-rose-500/10"
                 aria-label="Xoá câu thi"
               >
@@ -357,14 +391,19 @@ export default function AdminContests() {
             <h3 className="font-semibold text-gray-900 dark:text-gray-100">Phần thưởng</h3>
             <button
               type="button"
-              onClick={() => setForm((c) => ({ ...c, rewards: [...c.rewards, { ...emptyReward }] }))}
+              onClick={() =>
+                setForm((c) => ({ ...c, rewards: [...c.rewards, { ...emptyReward }] }))
+              }
               className="text-sm font-semibold text-brand-600 hover:text-brand-700 dark:text-brand-300"
             >
               Thêm phần thưởng
             </button>
           </div>
           {form.rewards.map((reward, index) => (
-            <div key={index} className="grid gap-2 rounded-lg border border-gray-200 p-3 dark:border-gray-700 md:grid-cols-6">
+            <div
+              key={index}
+              className="grid gap-2 rounded-lg border border-gray-200 p-3 dark:border-gray-700 md:grid-cols-6"
+            >
               <input
                 type="number"
                 value={reward.rankFrom}
@@ -387,7 +426,11 @@ export default function AdminContests() {
               />
               <select
                 value={reward.rewardType}
-                onChange={(e) => updateReward(index, { rewardType: e.target.value as AdminContestReward['rewardType'] })}
+                onChange={(e) =>
+                  updateReward(index, {
+                    rewardType: e.target.value as AdminContestReward['rewardType'],
+                  })
+                }
                 className="rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-700 dark:bg-ink-900 dark:text-white"
               >
                 <option value="TUITION_REFUND">Hoàn học phí</option>
@@ -397,7 +440,9 @@ export default function AdminContests() {
               </select>
               <button
                 type="button"
-                onClick={() => setForm((c) => ({ ...c, rewards: c.rewards.filter((_, i) => i !== index) }))}
+                onClick={() =>
+                  setForm((c) => ({ ...c, rewards: c.rewards.filter((_, i) => i !== index) }))
+                }
                 className="inline-flex items-center justify-center rounded-lg border border-rose-200 px-3 py-2 text-rose-600 hover:bg-rose-50 dark:border-rose-900/60 dark:hover:bg-rose-500/10"
                 aria-label="Xoá phần thưởng"
               >
@@ -412,7 +457,11 @@ export default function AdminContests() {
               <input
                 type="number"
                 value={reward.percentOff ?? ''}
-                onChange={(e) => updateReward(index, { percentOff: e.target.value ? Number(e.target.value) : null })}
+                onChange={(e) =>
+                  updateReward(index, {
+                    percentOff: e.target.value ? Number(e.target.value) : null,
+                  })
+                }
                 className="rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-700 dark:bg-ink-900 dark:text-white"
                 placeholder="%"
               />
@@ -432,15 +481,20 @@ export default function AdminContests() {
       </section>
 
       <section className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-ink-800">
-        <h2 className="mb-3 text-lg font-bold text-gray-900 dark:text-gray-100">Danh sách mùa thi</h2>
+        <h2 className="mb-3 text-lg font-bold text-gray-900 dark:text-gray-100">
+          Danh sách mùa thi
+        </h2>
         <div className="space-y-2">
           {contests.map((contest) => (
-            <div key={contest.id} className="flex flex-col gap-2 rounded-lg border border-gray-200 p-3 dark:border-gray-700 md:flex-row md:items-center">
+            <div
+              key={contest.id}
+              className="flex flex-col gap-2 rounded-lg border border-gray-200 p-3 dark:border-gray-700 md:flex-row md:items-center"
+            >
               <div className="min-w-0 flex-1">
                 <p className="font-semibold text-gray-900 dark:text-gray-100">{contest.title}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {contest.slug} · {contest.status} · {contest.rewards.length} phần thưởng
-                  {' '}· {contest.problems.length} câu thi
+                  {contest.slug} · {contest.status} · {contest.rewards.length} phần thưởng ·{' '}
+                  {contest.problems.length} câu thi
                 </p>
               </div>
               <button
@@ -463,13 +517,18 @@ export default function AdminContests() {
       </section>
 
       <section className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-ink-800">
-        <h2 className="mb-3 text-lg font-bold text-gray-900 dark:text-gray-100">Yêu cầu nhận thưởng</h2>
+        <h2 className="mb-3 text-lg font-bold text-gray-900 dark:text-gray-100">
+          Yêu cầu nhận thưởng
+        </h2>
         {claims.length === 0 ? (
           <p className="text-sm text-gray-500 dark:text-gray-400">Chưa có yêu cầu nào.</p>
         ) : (
           <div className="space-y-2">
             {claims.map((claim) => (
-              <div key={claim.id} className="flex flex-col gap-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700 md:flex-row md:items-center">
+              <div
+                key={claim.id}
+                className="flex flex-col gap-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700 md:flex-row md:items-center"
+              >
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-gray-900 dark:text-gray-100">
                     {claim.user.displayName} · #{claim.rank} · {claim.score} điểm
@@ -477,7 +536,9 @@ export default function AdminContests() {
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     {claim.contest.title} · {claim.reward.title} · {claim.status}
                   </p>
-                  {claim.note && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{claim.note}</p>}
+                  {claim.note && (
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{claim.note}</p>
+                  )}
                 </div>
                 <button
                   type="button"

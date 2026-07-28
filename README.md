@@ -172,7 +172,7 @@ npm run test
 npm run demo:smoke
 ```
 
-Bộ test hiện có **58 test** frontend/backend và **4 E2E test** trên Edge desktop/mobile. Các kiểm tra phủ bảo mật mật khẩu, kín test case ẩn, chấm bài, phân quyền admin, tiến độ, streak, guardrail AI, công thức rủi ro, phân loại lỗi và định dạng giao diện. Smoke test kiểm tra thêm bốn dịch vụ local và năm API nghiệp vụ.
+Bộ test hiện có **80 test** frontend/backend và **6 E2E test** trên Edge desktop/mobile. Các kiểm tra phủ bảo mật mật khẩu, kín test case ẩn, chấm bài, phân quyền admin, tiến độ, streak, guardrail AI, công thức giữ nhịp V3, công thức thi đua V2, phân loại lỗi và định dạng giao diện. Smoke test kiểm tra thêm bốn dịch vụ local và năm API nghiệp vụ.
 
 ## Bảo mật
 

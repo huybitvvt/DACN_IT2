@@ -8,6 +8,7 @@ import {
 } from '@/lib/adminApi';
 import { getErrorMessage } from '@/lib/api';
 import type { ProgrammingLanguage } from '@/types';
+import { programmingLanguageOptions } from '@/lib/language';
 import Spinner from '@/components/ui/Spinner';
 import Alert from '@/components/ui/Alert';
 
@@ -83,7 +84,9 @@ export default function AdminCourses() {
       {error && <Alert type="error">{error}</Alert>}
 
       <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-gray-200 dark:border-slate-800 shadow-soft space-y-3">
-        <h2 className="font-semibold text-gray-900 dark:text-white">{editingId ? 'Sửa khoá học' : 'Thêm khoá học'}</h2>
+        <h2 className="font-semibold text-gray-900 dark:text-white">
+          {editingId ? 'Sửa khoá học' : 'Thêm khoá học'}
+        </h2>
         <div className="grid sm:grid-cols-2 gap-3">
           <input
             className="px-3 py-2 border border-gray-300 rounded text-sm"
@@ -102,10 +105,11 @@ export default function AdminCourses() {
             value={form.language}
             onChange={(e) => setForm({ ...form, language: e.target.value as ProgrammingLanguage })}
           >
-            <option value="PYTHON">Python</option>
-            <option value="SQL">SQL</option>
-            <option value="C">C</option>
-            <option value="CPP">C++</option>
+            {programmingLanguageOptions.map((language) => (
+              <option key={language.value} value={language.value}>
+                {language.label}
+              </option>
+            ))}
           </select>
           <input
             type="number"
@@ -160,10 +164,16 @@ export default function AdminCourses() {
                 <td className="p-3 text-gray-500 dark:text-slate-400">{c.slug}</td>
                 <td className="p-3">{c.language}</td>
                 <td className="p-3 text-right space-x-2">
-                  <button onClick={() => startEdit(c)} className="text-brand-700 dark:text-brand-400 hover:underline">
+                  <button
+                    onClick={() => startEdit(c)}
+                    className="text-brand-700 dark:text-brand-400 hover:underline"
+                  >
                     Sửa
                   </button>
-                  <button onClick={() => handleDelete(c.id)} className="text-red-600 dark:text-red-400 hover:underline">
+                  <button
+                    onClick={() => handleDelete(c.id)}
+                    className="text-red-600 dark:text-red-400 hover:underline"
+                  >
                     Xoá
                   </button>
                 </td>

@@ -1,6 +1,7 @@
-import type { ProgrammingLanguage } from '@prisma/client';
 import { prisma } from '../../db/prisma.js';
 import type { GradeResult } from '../exercise/exercise.service.js';
+
+type ProgrammingLanguage = string;
 
 export interface SubmissionDiagnostic {
   errorCategory: string | null;
@@ -52,7 +53,11 @@ function detectCompileCategory(message: string, sourceCode: string) {
   if (/undeclared|not declared|not defined|nameerror|cannot find symbol/.test(normalized)) {
     return 'UNDECLARED_IDENTIFIER';
   }
-  if (/typeerror|incompatible type|cannot convert|invalid conversion|mismatched types/.test(normalized)) {
+  if (
+    /typeerror|incompatible type|cannot convert|invalid conversion|mismatched types/.test(
+      normalized,
+    )
+  ) {
     return 'TYPE_MISMATCH';
   }
   if (/no such file|modulenotfound|importerror|cannot find module|header/.test(normalized)) {
@@ -141,10 +146,7 @@ export async function getLearningErrorProfile(userId: string) {
     if (submission.status === 'PASSED') languageRow.passed++;
     byLanguage.set(language, languageRow);
     if (submission.errorCategory) {
-      byCategory.set(
-        submission.errorCategory,
-        (byCategory.get(submission.errorCategory) ?? 0) + 1,
-      );
+      byCategory.set(submission.errorCategory, (byCategory.get(submission.errorCategory) ?? 0) + 1);
     }
   }
 

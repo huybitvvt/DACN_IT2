@@ -41,7 +41,7 @@ curl http://localhost:2358/languages
 
 4. Chạy backend và thử bài C/C++ trên web.
 
-Ghi chú khi bảo vệ: Judge0 chạy code trong sandbox, có thể cấu hình giới hạn CPU/RAM/thời gian, phù hợp hơn dịch vụ compile ngoài cho hệ thống chấm bài.
+Ghi chú khi bảo vệ: Judge0 chạy code trong sandbox, có thể cấu hình giới hạn CPU/RAM/thời gian, phù hợp hơn dịch vụ compile ngoài cho hệ thống chấm bài. Compose hiện pin Judge0 CE `1.13.1`, có PostgreSQL/Redis health check, log rotation và scale worker.
 
 Ghi chú riêng cho Docker Desktop trên Windows: Judge0 CE 1.13.x dùng `isolate` với cgroup v1, trong khi Docker Desktop thường chạy cgroup v2. Backend đã gửi thêm `enable_per_process_and_thread_time_limit=true` và `enable_per_process_and_thread_memory_limit=true` khi nộp code để Judge0 dùng giới hạn per-process, tránh lỗi sandbox `No such file or directory @ rb_sysopen - /box/...`.
 
@@ -87,6 +87,13 @@ npm run seed --workspace server
 
 Nếu Prisma CLI không tự đọc `.env` ở thư mục gốc khi chạy trên Windows, có thể truyền `DATABASE_URL` trong terminal hiện tại rồi chạy lại migrate.
 
+Sau khi pull phiên bản mới có migration, dùng lệnh deploy an toàn:
+
+```powershell
+$env:DATABASE_URL="postgresql://..."
+npm run prisma:deploy --workspace server
+```
+
 ## 4. Demo nhanh
 
 1. Đăng nhập hoặc đăng ký học viên.
@@ -102,7 +109,7 @@ Nếu Prisma CLI không tự đọc `.env` ở thư mục gốc khi chạy trên
 ## 5. Luồng thi đua đã có trong code
 
 - Admin tạo mùa thi, cấu hình thời gian, phạm vi khoá học và mốc phần thưởng.
-- Hệ thống tính ranking từ dữ liệu học thật: progress, submission pass, quiz attempt, streak, badge.
+- Hệ thống tính điểm mùa thi từ dữ liệu học thật trong thời gian mùa: lesson duy nhất, exercise pass duy nhất, kết quả quiz tốt nhất, điểm phòng thi chuẩn hóa và số ngày học.
 - Học viên xem rank của mình trong từng mùa thi.
 - Học viên có phòng thi riêng theo mùa: start attempt, giới hạn thời gian, làm bài code/quiz, submit attempt.
 - Học viên đủ điều kiện có thể gửi yêu cầu nhận thưởng.
@@ -118,6 +125,7 @@ Nếu Prisma CLI không tự đọc `.env` ở thư mục gốc khi chạy trên
 | `npm run local:services:llama` | Bật Judge0 + Llama local |
 | `npm run local:services:status` | Xem trạng thái container |
 | `npm run local:services:down` | Tắt các container local |
+| `npm run load:judge0` | Đo tải Judge0; tùy chỉnh `LOAD_TOTAL` và `LOAD_CONCURRENCY` |
 | `npm run demo:up` | Chạy trọn bộ môi trường và tunnel thanh toán |
 | `npm run demo:status` | Kiểm tra frontend/backend/Judge0/Llama |
 | `npm run demo:smoke` | Smoke test hạ tầng và API nghiệp vụ |

@@ -1,65 +1,134 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: '10m'
+    max-file: '3'
+
+x-judge0-environment: &judge0-environment
+  SECRET_KEY_BASE: ${JUDGE0_SECRET_KEY_BASE:-change-this-local-secret}
+  COUNT: ${JUDGE0_COUNT:-2}
+  RAILS_SERVER_PROCESSES: ${JUDGE0_SERVER_PROCESSES:-2}
+  RAILS_MAX_THREADS: ${JUDGE0_SERVER_THREADS:-8}
+  POSTGRES_HOST: judge0-db
+  POSTGRES_PORT: 5432
+  POSTGRES_DB: ${POSTGRES_DB:-judge0}
+  POSTGRES_USER: ${POSTGRES_USER:-judge0}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-judge0}
+  REDIS_HOST: judge0-redis
+  REDIS_PORT: 6379
+
 services:
   judge0-server:
-    image: judge0/judge0:latest
+    image: ${JUDGE0_IMAGE:-judge0/judge0:1.13.1}
     env_file:
       - ./judge0.conf
+    environment: *judge0-environment
     ports:
-      - "2358:2358"
+      - '2358:2358'
     privileged: true
     restart: unless-stopped
+    stop_grace_period: 30s
+    mem_limit: ${JUDGE0_SERVER_MEMORY:-768m}
+    cpus: ${JUDGE0_SERVER_CPUS:-1.0}
+    logging: *default-logging
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'ruby',
+          '-rnet/http',
+          '-e',
+          "exit(Net::HTTP.get_response(URI('http://127.0.0.1:2358/languages')).is_a?(Net::HTTPSuccess) ? 0 : 1)",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 45s
     depends_on:
-      - judge0-db
-      - judge0-redis
+      judge0-db:
+        condition: service_healthy
+      judge0-redis:
+        condition: service_healthy
 
   judge0-worker:
-    image: judge0/judge0:latest
-    command: ["./scripts/workers"]
+    image: ${JUDGE0_IMAGE:-judge0/judge0:1.13.1}
+    command: ['./scripts/workers']
     env_file:
       - ./judge0.conf
+    environment: *judge0-environment
     privileged: true
     restart: unless-stopped
+    stop_grace_period: 60s
+    mem_limit: ${JUDGE0_WORKER_MEMORY:-1536m}
+    cpus: ${JUDGE0_WORKER_CPUS:-2.0}
+    logging: *default-logging
     depends_on:
-      - judge0-db
-      - judge0-redis
+      judge0-db:
+        condition: service_healthy
+      judge0-redis:
+        condition: service_healthy
 
   judge0-db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: judge0
-      POSTGRES_USER: judge0
-      POSTGRES_PASSWORD: judge0
+      POSTGRES_DB: ${POSTGRES_DB:-judge0}
+      POSTGRES_USER: ${POSTGRES_USER:-judge0}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-judge0}
     volumes:
       - judge0-db-data:/var/lib/postgresql/data
     restart: unless-stopped
+    stop_grace_period: 30s
+    mem_limit: ${JUDGE0_DB_MEMORY:-512m}
+    cpus: ${JUDGE0_DB_CPUS:-1.0}
+    logging: *default-logging
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-judge0} -d ${POSTGRES_DB:-judge0}']
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   judge0-redis:
     image: redis:7-alpine
-    command: ["redis-server", "--appendonly", "yes"]
+    command: ['redis-server', '--appendonly', 'yes', '--appendfsync', 'everysec']
     volumes:
       - judge0-redis-data:/data
     restart: unless-stopped
+    stop_grace_period: 30s
+    mem_limit: ${JUDGE0_REDIS_MEMORY:-256m}
+    cpus: ${JUDGE0_REDIS_CPUS:-0.5}
+    logging: *default-logging
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 3s
+      retries: 10
 
   llama:
     image: ${LLAMA_CPP_IMAGE:-ghcr.io/ggml-org/llama.cpp:server}
-    profiles: ["llama"]
+    profiles: ['llama']
     volumes:
       - ./models:/models:ro
     ports:
-      - "8080:8080"
+      - '8080:8080'
     command:
       [
-        "-m",
-        "/models/${LLAMA_MODEL_FILE:-model.gguf}",
-        "--host",
-        "0.0.0.0",
-        "--port",
-        "8080",
-        "-c",
-        "${LLAMA_CTX_SIZE:-2048}",
-        "-t",
-        "${LLAMA_THREADS:-4}"
+        '-m',
+        '/models/${LLAMA_MODEL_FILE:-model.gguf}',
+        '--host',
+        '0.0.0.0',
+        '--port',
+        '8080',
+        '-c',
+        '${LLAMA_CTX_SIZE:-2048}',
+        '-t',
+        '${LLAMA_THREADS:-4}',
+        '--parallel',
+        '${LLAMA_PARALLEL:-2}',
+        '--cont-batching',
       ]
     restart: unless-stopped
+    stop_grace_period: 60s
+    logging: *default-logging
 
 volumes:
   judge0-db-data:

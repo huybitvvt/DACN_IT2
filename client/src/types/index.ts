@@ -2,7 +2,7 @@
 
 export type Role = 'LEARNER' | 'ADMIN';
 
-export type ProgrammingLanguage = 'SQL' | 'C' | 'CPP' | 'PYTHON';
+export type ProgrammingLanguage = string;
 
 export interface User {
   id: string;

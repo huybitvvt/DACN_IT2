@@ -10,6 +10,7 @@ export interface RetentionMission {
   title: string;
   description: string;
   points: number;
+  pointsLabel: string;
   minutes: number;
   ctaLabel: string;
   ctaHref: string;
@@ -21,6 +22,15 @@ export interface RetentionScoreFactor {
   score: number;
   maxScore: number;
   explanation: string;
+}
+
+export interface RetentionTrendPoint {
+  date: string;
+  score: number;
+  riskLevel: 'ON_TRACK' | 'WATCH' | 'AT_RISK';
+  activeDays14: number;
+  completedItems14: number;
+  activityUnits7: number;
 }
 
 export interface LearningIntervention {
@@ -79,6 +89,15 @@ export interface RetentionPlan {
     factors: RetentionScoreFactor[];
     reasons: string[];
   };
+  scoreTrend: {
+    points: RetentionTrendPoint[];
+    summary: {
+      delta7d: number;
+      direction: 'UP' | 'DOWN' | 'STABLE';
+      averageScore: number;
+      bestScore: number;
+    };
+  };
   focusCourse: {
     courseId: string;
     slug: string;
@@ -97,6 +116,12 @@ export interface RetentionPlan {
     activeContestCount: number;
     recentPassedSubmissions: number;
     recentQuizAttempts: number;
+    activeDays14: number;
+    completedItems14: number;
+    attemptedExercises14: number;
+    averageQuizPercent14: number;
+    activityUnits7: number;
+    activityUnitsPrevious7: number;
   };
   intervention: LearningIntervention | null;
   rescueOffer: {

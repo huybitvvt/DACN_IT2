@@ -12,6 +12,7 @@ import {
 } from '@/lib/adminApi';
 import { getErrorMessage } from '@/lib/api';
 import type { ProgrammingLanguage } from '@/types';
+import { programmingLanguageOptions } from '@/lib/language';
 import Spinner from '@/components/ui/Spinner';
 import Alert from '@/components/ui/Alert';
 
@@ -145,9 +146,11 @@ export default function AdminExercises() {
             value={form.language}
             onChange={(e) => setForm({ ...form, language: e.target.value as ProgrammingLanguage })}
           >
-            <option value="PYTHON">Python</option>
-            <option value="C">C</option>
-            <option value="CPP">C++</option>
+            {programmingLanguageOptions.map((language) => (
+              <option key={language.value} value={language.value}>
+                {language.label}
+              </option>
+            ))}
           </select>
         </div>
         <textarea
@@ -163,7 +166,10 @@ export default function AdminExercises() {
             <h3 className="text-sm font-medium text-gray-900 dark:text-white">Test cases</h3>
             <button
               onClick={() =>
-                setTestCases((prev) => [...prev, { input: '', expectedOutput: '', isHidden: false }])
+                setTestCases((prev) => [
+                  ...prev,
+                  { input: '', expectedOutput: '', isHidden: false },
+                ])
               }
               className="text-sm text-brand-700 dark:text-brand-400 hover:underline"
             >
@@ -218,7 +224,10 @@ export default function AdminExercises() {
                 ({ex.testCases.length} test, {ex.testCases.filter((t) => t.isHidden).length} ẩn)
               </em>
             </span>
-            <button onClick={() => handleDelete(ex.id)} className="text-red-600 dark:text-red-400 hover:underline text-sm">
+            <button
+              onClick={() => handleDelete(ex.id)}
+              className="text-red-600 dark:text-red-400 hover:underline text-sm"
+            >
               Xoá
             </button>
           </li>

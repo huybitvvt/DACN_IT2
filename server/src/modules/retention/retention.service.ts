@@ -1,5 +1,10 @@
 import { prisma } from '../../db/prisma.js';
 import { getProgressOverview } from '../progress/progress.service.js';
+import {
+  buildRetentionScoreInputAt,
+  buildRetentionTrend,
+  type RetentionAnalyticsData,
+} from './retention-analytics.js';
 import { calculateRetentionHealth } from './retention-score.js';
 import {
   ensureLearningIntervention,
@@ -12,13 +17,8 @@ type MissionType = 'COURSE' | 'LESSON' | 'EXERCISE' | 'QUIZ' | 'CONTEST';
 export interface RetentionMission extends InterventionMissionInput {
   type: MissionType;
   points: number;
+  pointsLabel: string;
   ctaLabel: string;
-}
-
-function daysBetween(start: Date, end: Date) {
-  const startDay = Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate());
-  const endDay = Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate());
-  return Math.max(0, Math.floor((endDay - startDay) / 86400000));
 }
 
 function riskLabel(level: RiskLevel) {
@@ -47,6 +47,7 @@ export async function getRetentionPlan(
 ) {
   const now = new Date();
   const sinceWeek = new Date(now.getTime() - 7 * 86400000);
+  const sinceAnalytics = new Date(now.getTime() - 56 * 86400000);
   const [
     user,
     progress,
@@ -54,8 +55,8 @@ export async function getRetentionPlan(
     badgesCount,
     paidPurchases,
     activeContests,
-    recentPassedSubmissions,
-    recentQuizAttempts,
+    submissionRows,
+    quizRows,
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
@@ -64,7 +65,7 @@ export async function getRetentionPlan(
     getProgressOverview(userId),
     prisma.progress.findMany({
       where: { userId, completed: true },
-      select: { itemId: true, itemType: true },
+      select: { courseId: true, itemId: true, itemType: true, completedAt: true },
     }),
     prisma.userBadge.count({ where: { userId } }),
     prisma.coursePurchase.findMany({
@@ -80,11 +81,24 @@ export async function getRetentionPlan(
       orderBy: { endsAt: 'asc' },
       take: 2,
     }),
-    prisma.submission.count({
-      where: { userId, status: 'PASSED', createdAt: { gte: sinceWeek } },
+    prisma.submission.findMany({
+      where: { userId, createdAt: { gte: sinceAnalytics } },
+      select: {
+        exerciseId: true,
+        status: true,
+        createdAt: true,
+        exercise: { select: { lesson: { select: { courseId: true } } } },
+      },
     }),
-    prisma.quizAttempt.count({
-      where: { userId, createdAt: { gte: sinceWeek } },
+    prisma.quizAttempt.findMany({
+      where: { userId, createdAt: { gte: sinceAnalytics } },
+      select: {
+        quizId: true,
+        score: true,
+        total: true,
+        createdAt: true,
+        quiz: { select: { lesson: { select: { courseId: true } } } },
+      },
     }),
   ]);
 
@@ -94,22 +108,55 @@ export async function getRetentionPlan(
   const eligibleContests = activeContests.filter(
     (contest) => !contest.courseSlug || purchasedCourseSlugs.has(contest.courseSlug),
   );
-  const completedItemIds = new Set(completedRows.map((row) => row.itemId));
+  const eligibleCompletedRows = completedRows.filter((row) => purchasedCourseIds.has(row.courseId));
+  const eligibleSubmissions = submissionRows.filter((row) =>
+    purchasedCourseIds.has(row.exercise.lesson.courseId),
+  );
+  const eligibleQuizRows = quizRows.filter((row) =>
+    purchasedCourseIds.has(row.quiz.lesson.courseId),
+  );
+  const completedItemIds = new Set(eligibleCompletedRows.map((row) => row.itemId));
   const purchasedProgress = progress.filter((course) => purchasedCourseIds.has(course.courseId));
   const totalItems = purchasedProgress.reduce((sum, course) => sum + course.total, 0);
   const completedItems = purchasedProgress.reduce((sum, course) => sum + course.completed, 0);
-  const overallPercent = totalItems === 0 ? 0 : Math.round((completedItems / totalItems) * 100);
-  const daysInactive = user?.lastActiveDate ? daysBetween(user.lastActiveDate, now) : 99;
-  const streak = user?.streakCount ?? 0;
-
-  const scoreResult = calculateRetentionHealth({
-    daysInactive,
-    overallPercent,
-    streak,
-    recentPassedSubmissions,
-    recentQuizAttempts,
-    badges: badgesCount,
-  });
+  const analyticsData: RetentionAnalyticsData = {
+    totalItems,
+    lastActiveDate: user?.lastActiveDate ?? null,
+    progress: eligibleCompletedRows.map((row) => ({
+      itemType: row.itemType,
+      completedAt: row.completedAt,
+    })),
+    submissions: eligibleSubmissions.map((row) => ({
+      exerciseId: row.exerciseId,
+      status: row.status,
+      createdAt: row.createdAt,
+    })),
+    quizAttempts: eligibleQuizRows.map((row) => ({
+      quizId: row.quizId,
+      score: row.score,
+      total: row.total,
+      createdAt: row.createdAt,
+    })),
+  };
+  const scoreInput = buildRetentionScoreInputAt(analyticsData, now);
+  const scoreResult = calculateRetentionHealth(scoreInput);
+  const scoreTrend = hasPurchasedCourse
+    ? buildRetentionTrend(analyticsData, now)
+    : {
+        points: [],
+        summary: { delta7d: 0, direction: 'STABLE' as const, averageScore: 0, bestScore: 0 },
+      };
+  const overallPercent = scoreInput.overallPercent;
+  const daysInactive = scoreInput.daysInactive;
+  const streak = scoreInput.effectiveStreak;
+  const recentPassedSubmissions = new Set(
+    eligibleSubmissions
+      .filter((row) => row.status === 'PASSED' && row.createdAt >= sinceWeek)
+      .map((row) => row.exerciseId),
+  ).size;
+  const recentQuizAttempts = new Set(
+    eligibleQuizRows.filter((row) => row.createdAt >= sinceWeek).map((row) => row.quizId),
+  ).size;
   const healthScore = hasPurchasedCourse ? scoreResult.score : 0;
   const riskLevel: RiskLevel = hasPurchasedCourse ? scoreResult.riskLevel : 'NOT_STARTED';
 
@@ -127,8 +174,10 @@ export async function getRetentionPlan(
       itemId: null,
       type: 'COURSE',
       title: 'Chọn khoá học đầu tiên',
-      description: 'Bạn chưa mua khoá nào. Hãy chọn một khoá để hệ thống bắt đầu tính tiến độ, streak và nhiệm vụ giữ nhịp.',
+      description:
+        'Bạn chưa mua khoá nào. Hãy chọn một khoá để hệ thống bắt đầu tính tiến độ, streak và nhiệm vụ giữ nhịp.',
       points: 0,
+      pointsLabel: 'Chưa tính điểm',
       minutes: 3,
       ctaLabel: 'Xem khoá học',
       ctaHref: '/courses',
@@ -156,7 +205,8 @@ export async function getRetentionPlan(
           type: 'LESSON',
           title: `Học tiếp: ${nextLesson.title}`,
           description: `${course.title} - hoàn thành một bài học để tăng tiến độ và giữ nhịp.`,
-          points: 10,
+          points: 20,
+          pointsLabel: '+20 điểm thi đua',
           minutes: 12,
           ctaLabel: 'Vào bài học',
           ctaHref: `/lessons/${nextLesson.id}`,
@@ -164,7 +214,9 @@ export async function getRetentionPlan(
       }
 
       const nextExercise = course.lessons
-        .flatMap((lesson) => lesson.exercises.map((exercise) => ({ ...exercise, lessonTitle: lesson.title })))
+        .flatMap((lesson) =>
+          lesson.exercises.map((exercise) => ({ ...exercise, lessonTitle: lesson.title })),
+        )
         .find((exercise) => !completedItemIds.has(exercise.id));
       if (nextExercise) {
         missions.push({
@@ -173,7 +225,8 @@ export async function getRetentionPlan(
           type: 'EXERCISE',
           title: `Luyện bài: ${nextExercise.title}`,
           description: `${nextExercise.lessonTitle} - nộp bài pass để cộng mạnh vào ranking.`,
-          points: 30,
+          points: 35,
+          pointsLabel: '+35 điểm thi đua',
           minutes: 18,
           ctaLabel: 'Làm bài tập',
           ctaHref: `/exercises/${nextExercise.id}`,
@@ -190,7 +243,8 @@ export async function getRetentionPlan(
           type: 'QUIZ',
           title: `Quiz nhanh: ${nextQuiz.quiz.title}`,
           description: `${nextQuiz.lessonTitle} - kiểm tra kiến thức để mở thêm điểm thi đua.`,
-          points: 20,
+          points: 30,
+          pointsLabel: 'Tối đa +30 điểm thi đua',
           minutes: 8,
           ctaLabel: 'Làm quiz',
           ctaHref: `/lessons/${nextQuiz.lessonId}/quiz`,
@@ -210,7 +264,8 @@ export async function getRetentionPlan(
         description: bestReward
           ? `Top ${bestReward.rankFrom === bestReward.rankTo ? bestReward.rankFrom : `${bestReward.rankFrom}-${bestReward.rankTo}`} đang có ${bestReward.title}.`
           : 'Mùa thi đang mở, điểm học hôm nay sẽ được tính vào ranking.',
-        points: 50,
+        points: 300,
+        pointsLabel: 'Tối đa +300 điểm phòng thi',
         minutes: contest.durationMinutes,
         ctaLabel: 'Vào mùa thi',
         ctaHref: `/contests/${contest.slug}`,
@@ -220,7 +275,13 @@ export async function getRetentionPlan(
 
   const prioritizedMissions = missions
     .sort((a, b) => {
-      const typeWeight: Record<MissionType, number> = { COURSE: 0, LESSON: 1, QUIZ: 2, EXERCISE: 3, CONTEST: 4 };
+      const typeWeight: Record<MissionType, number> = {
+        COURSE: 0,
+        LESSON: 1,
+        QUIZ: 2,
+        EXERCISE: 3,
+        CONTEST: 4,
+      };
       return typeWeight[a.type] - typeWeight[b.type] || a.minutes - b.minutes;
     })
     .slice(0, 4);
@@ -266,6 +327,7 @@ export async function getRetentionPlan(
         ? scoreResult.reasons
         : ['Chỉ bắt đầu tính điểm sau khi học viên mua khóa học.'],
     },
+    scoreTrend,
     focusCourse,
     metrics: {
       completedItems,
@@ -277,20 +339,26 @@ export async function getRetentionPlan(
       activeContestCount: eligibleContests.length,
       recentPassedSubmissions,
       recentQuizAttempts,
+      activeDays14: scoreInput.activeDays14,
+      completedItems14: scoreInput.completedItems14,
+      attemptedExercises14: scoreInput.attemptedExercises14,
+      averageQuizPercent14: scoreInput.averageQuizPercent14,
+      activityUnits7: scoreInput.activityUnits7,
+      activityUnitsPrevious7: scoreInput.activityUnitsPrevious7,
     },
     rescueOffer: {
       title:
         riskLevel === 'NOT_STARTED'
           ? 'Bắt đầu để mở giữ nhịp'
           : riskLevel === 'ON_TRACK'
-          ? 'Giữ top bằng nhiệm vụ ngắn'
-          : 'Gói cứu nhịp 48 giờ',
+            ? 'Giữ top bằng nhiệm vụ ngắn'
+            : 'Gói cứu nhịp 48 giờ',
       description:
         riskLevel === 'NOT_STARTED'
           ? 'Sau khi mua khoá, hệ thống sẽ theo dõi tiến độ thật và đề xuất nhiệm vụ học mỗi ngày.'
           : riskLevel === 'ON_TRACK'
-          ? 'Hoàn thành đều nhiệm vụ nhỏ để tích điểm ranking và giữ cơ hội nhận thưởng.'
-          : 'Hoàn thành 3 nhiệm vụ ngắn trong 48 giờ để quay lại lộ trình và đủ điều kiện nhận ưu đãi thi đua.',
+            ? 'Hoàn thành đều nhiệm vụ nhỏ để tích điểm ranking và giữ cơ hội nhận thưởng.'
+            : 'Hoàn thành 3 nhiệm vụ ngắn trong 48 giờ để quay lại lộ trình và đủ điều kiện nhận ưu đãi thi đua.',
       target:
         intervention?.targetMissions ??
         (riskLevel === 'NOT_STARTED' ? 1 : riskLevel === 'AT_RISK' ? 3 : 2),

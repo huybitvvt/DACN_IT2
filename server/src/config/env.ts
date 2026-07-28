@@ -40,6 +40,11 @@ export const env = {
 
   // Trình chạy code C/C++ qua Judge0 CE tự host local.
   judge0Url: optional('JUDGE0_URL', 'http://localhost:2358'),
+  judge0LanguageMap: optional('JUDGE0_LANGUAGE_MAP'),
+  judge0ResultTimeoutMs: Number(optional('JUDGE0_RESULT_TIMEOUT_MS', '30000')),
+  judge0MaxConcurrent: Number(optional('JUDGE0_MAX_CONCURRENT', '32')),
+  judge0MaxQueue: Number(optional('JUDGE0_MAX_QUEUE', '200')),
+  judge0QueueTimeoutMs: Number(optional('JUDGE0_QUEUE_TIMEOUT_MS', '15000')),
 
   smtpHost: optional('SMTP_HOST'),
   smtpPort: Number(optional('SMTP_PORT', '465')),

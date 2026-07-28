@@ -1,6 +1,7 @@
 import { prisma } from '../../db/prisma.js';
 import { AppError } from '../../utils/AppError.js';
 import { createNotification, notifyAdmins } from '../notification/notification.service.js';
+import { calculateCompetitionScore, targetActiveDays } from './competition-score.js';
 
 interface RewardView {
   id: string;
@@ -22,8 +23,12 @@ interface ContestLeaderboardEntry {
   passedSubmissions: number;
   quizPoints: number;
   examScore: number;
-  streak: number;
-  badges: number;
+  activeDays: number;
+  targetActiveDays: number;
+  learningPoints: number;
+  practicePoints: number;
+  consistencyPoints: number;
+  formulaVersion: string;
   reward: RewardView | null;
 }
 
@@ -42,16 +47,35 @@ function mapRewards(rewards: RewardView[]) {
   return rewards.sort((a, b) => a.rankFrom - b.rankFrom || a.rankTo - b.rankTo);
 }
 
-async function buildLeaderboard(contest: {
+type LeaderboardContest = {
   id: string;
   courseSlug: string | null;
   startsAt: Date;
   endsAt: Date;
   rewards: RewardView[];
-}): Promise<ContestLeaderboardEntry[]> {
-  const courseFilter = contest.courseSlug
-    ? { course: { slug: contest.courseSlug } }
-    : undefined;
+};
+
+const LEADERBOARD_CACHE_TTL_MS = 5_000;
+const leaderboardCache = new Map<
+  string,
+  { expiresAt: number; value: Promise<ContestLeaderboardEntry[]> }
+>();
+
+function leaderboardCacheKey(contest: LeaderboardContest) {
+  const rewardVersion = contest.rewards
+    .map((reward) => `${reward.id}:${reward.rankFrom}:${reward.rankTo}`)
+    .join(',');
+  return `${contest.id}:${contest.startsAt.toISOString()}:${contest.endsAt.toISOString()}:${rewardVersion}`;
+}
+
+function invalidateLeaderboard(contestId: string) {
+  for (const key of leaderboardCache.keys()) {
+    if (key.startsWith(`${contestId}:`)) leaderboardCache.delete(key);
+  }
+}
+
+async function computeLeaderboard(contest: LeaderboardContest): Promise<ContestLeaderboardEntry[]> {
+  const courseFilter = contest.courseSlug ? { course: { slug: contest.courseSlug } } : undefined;
   const exerciseCourseFilter = contest.courseSlug
     ? { exercise: { lesson: { course: { slug: contest.courseSlug } } } }
     : undefined;
@@ -60,9 +84,17 @@ async function buildLeaderboard(contest: {
     : undefined;
 
   const users = await prisma.user.findMany({
+    where: {
+      role: 'LEARNER',
+      purchases: {
+        some: {
+          status: 'PAID',
+          ...(contest.courseSlug ? { course: { slug: contest.courseSlug } } : {}),
+        },
+      },
+    },
     select: {
       displayName: true,
-      streakCount: true,
       id: true,
       progress: {
         where: {
@@ -70,7 +102,7 @@ async function buildLeaderboard(contest: {
           completedAt: { gte: contest.startsAt, lte: contest.endsAt },
           ...(courseFilter ? { course: courseFilter.course } : {}),
         },
-        select: { id: true },
+        select: { itemType: true, completedAt: true },
       },
       submissions: {
         where: {
@@ -78,22 +110,18 @@ async function buildLeaderboard(contest: {
           createdAt: { gte: contest.startsAt, lte: contest.endsAt },
           ...(exerciseCourseFilter ?? {}),
         },
-        select: { exerciseId: true },
+        select: { exerciseId: true, createdAt: true },
       },
       quizAttempts: {
         where: {
           createdAt: { gte: contest.startsAt, lte: contest.endsAt },
           ...(quizCourseFilter ?? {}),
         },
-        select: { quizId: true, score: true, total: true },
-      },
-      badges: {
-        where: { awardedAt: { gte: contest.startsAt, lte: contest.endsAt } },
-        select: { id: true },
+        select: { quizId: true, score: true, total: true, createdAt: true },
       },
       contestAttempts: {
         where: { contestId: contest.id, status: 'SUBMITTED' },
-        select: { score: true },
+        select: { score: true, maxScore: true, submittedAt: true },
       },
     },
   });
@@ -103,45 +131,101 @@ async function buildLeaderboard(contest: {
       const passedSubmissionCount = new Set(u.submissions.map((s) => s.exerciseId)).size;
       const quizBest = new Map<string, number>();
       for (const attempt of u.quizAttempts) {
-        const normalized = attempt.total > 0 ? Math.round((attempt.score / attempt.total) * 20) : 0;
+        const normalized =
+          attempt.total > 0 ? Math.round((attempt.score / attempt.total) * 100) : 0;
         quizBest.set(attempt.quizId, Math.max(quizBest.get(attempt.quizId) ?? 0, normalized));
       }
-      const quizPoints = [...quizBest.values()].reduce((sum, n) => sum + n, 0);
-      const completedItems = u.progress.length;
-      const badges = u.badges.length;
-      const examScore = u.contestAttempts.reduce((sum, attempt) => sum + attempt.score, 0);
-      const score =
-        completedItems * 10 +
-        passedSubmissionCount * 30 +
-        quizPoints +
-        examScore +
-        u.streakCount * 5 +
-        badges * 20;
+      const completedItems = u.progress.filter((item) => item.itemType === 'LESSON').length;
+      const bestExam = u.contestAttempts.reduce(
+        (best, attempt) => {
+          const ratio = attempt.maxScore > 0 ? attempt.score / attempt.maxScore : 0;
+          return ratio > best.ratio
+            ? { score: attempt.score, maxScore: attempt.maxScore, ratio }
+            : best;
+        },
+        { score: 0, maxScore: 0, ratio: 0 },
+      );
+      const activeDateValues = [
+        ...u.progress.flatMap((item) => (item.completedAt ? [item.completedAt] : [])),
+        ...u.submissions.map((item) => item.createdAt),
+        ...u.quizAttempts.map((item) => item.createdAt),
+        ...u.contestAttempts.flatMap((item) => (item.submittedAt ? [item.submittedAt] : [])),
+      ];
+      const activeDays = new Set(activeDateValues.map((date) => date.toISOString().slice(0, 10)))
+        .size;
+      const consistencyPeriodEnd = new Date(
+        Math.min(Date.now(), contest.endsAt.getTime()),
+      );
+      const consistencyTarget = targetActiveDays(
+        contest.startsAt,
+        consistencyPeriodEnd,
+      );
+      const scoreResult = calculateCompetitionScore({
+        completedLessons: completedItems,
+        passedExercises: passedSubmissionCount,
+        quizBestPercents: [...quizBest.values()],
+        examEarned: bestExam.score,
+        examMax: bestExam.maxScore,
+        activeDays,
+        targetActiveDays: consistencyTarget,
+      });
+      const lastScoredAt = Math.max(
+        contest.startsAt.getTime(),
+        ...activeDateValues.map((date) => date.getTime()),
+      );
 
       return {
         rank: 0,
         userId: u.id,
         displayName: u.displayName,
-        score,
+        score: scoreResult.score,
         completedItems,
         passedSubmissions: passedSubmissionCount,
-        quizPoints,
-        examScore,
-        streak: u.streakCount,
-        badges,
+        quizPoints: scoreResult.breakdown.quizzes,
+        examScore: scoreResult.breakdown.contestRoom,
+        activeDays,
+        targetActiveDays: consistencyTarget,
+        learningPoints: scoreResult.breakdown.learning,
+        practicePoints: scoreResult.breakdown.practice,
+        consistencyPoints: scoreResult.breakdown.consistency,
+        formulaVersion: scoreResult.formulaVersion,
         reward: null,
+        lastScoredAt,
       };
     })
     .filter((u) => u.score > 0)
-    .sort((a, b) => b.score - a.score || b.completedItems - a.completedItems)
-    .slice(0, 20)
-    .map((entry, index) => ({
+    .sort(
+      (a, b) =>
+        b.score - a.score ||
+        b.examScore - a.examScore ||
+        b.practicePoints - a.practicePoints ||
+        b.quizPoints - a.quizPoints ||
+        b.consistencyPoints - a.consistencyPoints ||
+        a.lastScoredAt - b.lastScoredAt,
+    )
+    .map(({ lastScoredAt: _lastScoredAt, ...entry }, index) => ({
       ...entry,
       rank: index + 1,
       reward: rewardForRank(index + 1, contest.rewards),
     }));
 
   return ranked;
+}
+
+async function buildLeaderboard(contest: LeaderboardContest) {
+  const key = leaderboardCacheKey(contest);
+  const cached = leaderboardCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) return cached.value;
+
+  const value = computeLeaderboard(contest).catch((error) => {
+    leaderboardCache.delete(key);
+    throw error;
+  });
+  leaderboardCache.set(key, {
+    expiresAt: Date.now() + LEADERBOARD_CACHE_TTL_MS,
+    value,
+  });
+  return value;
 }
 
 export async function listContests() {
@@ -208,7 +292,7 @@ export async function getContestDetail(slug: string) {
     endsAt: contest.endsAt,
     scoringNote: contest.scoringNote,
     rewards,
-    leaderboard: leaderboard.map(({ userId: _userId, ...entry }) => entry),
+    leaderboard: leaderboard.slice(0, 100).map(({ userId: _userId, ...entry }) => entry),
   };
 }
 
@@ -303,7 +387,13 @@ function mapContestProblems(
   }));
 }
 
-async function scoreAttempt(attempt: { id: string; contestId: string; userId: string; startedAt: Date; expiresAt: Date }) {
+async function scoreAttempt(attempt: {
+  id: string;
+  contestId: string;
+  userId: string;
+  startedAt: Date;
+  expiresAt: Date;
+}) {
   const problems = await prisma.contestProblem.findMany({
     where: { contestId: attempt.contestId },
     orderBy: { order: 'asc' },
@@ -401,7 +491,12 @@ export async function startContestAttempt(slug: string, userId: string) {
     const scored = await scoreAttempt(current);
     await prisma.contestAttempt.update({
       where: { id: current.id },
-      data: { status: 'EXPIRED', score: scored.score, maxScore: scored.maxScore, submittedAt: new Date() },
+      data: {
+        status: 'EXPIRED',
+        score: scored.score,
+        maxScore: scored.maxScore,
+        submittedAt: new Date(),
+      },
     });
   }
 
@@ -442,6 +537,7 @@ export async function submitContestAttempt(slug: string, userId: string) {
     },
   });
 
+  invalidateLeaderboard(contest.id);
   return getContestRoom(slug, userId);
 }
 

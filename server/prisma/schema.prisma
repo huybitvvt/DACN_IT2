@@ -92,14 +92,6 @@ enum InterventionSource {
   ADMIN
 }
 
-// Ngôn ngữ được hỗ trợ trên nền tảng.
-enum ProgrammingLanguage {
-  SQL
-  C
-  CPP
-  PYTHON
-}
-
 // ---------------------------------------------------------------------------
 // Người dùng & gamification
 // ---------------------------------------------------------------------------
@@ -190,7 +182,7 @@ model Course {
   id          String              @id @default(cuid())
   slug        String              @unique
   title       String
-  language    ProgrammingLanguage
+  language    String              @db.VarChar(80)
   description String
   priceVnd    Int                 @default(2000)
   order       Int                 @default(0)
@@ -220,6 +212,7 @@ model CoursePurchase {
   @@index([userId])
   @@index([courseId])
   @@index([status])
+  @@index([status, userId])
 }
 
 model SepayWebhookEvent {
@@ -303,6 +296,7 @@ model ContestAttempt {
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([contestId, userId, status])
+  @@index([contestId, status, userId])
   @@index([userId, startedAt])
 }
 
@@ -449,7 +443,7 @@ model Lesson {
 model Example {
   id       String              @id @default(cuid())
   lessonId String
-  language ProgrammingLanguage
+  language String @db.VarChar(80)
   code     String
   order    Int                 @default(0)
 
@@ -467,7 +461,7 @@ model Exercise {
   lessonId       String
   title          String
   promptMarkdown String
-  language       ProgrammingLanguage
+  language       String              @db.VarChar(80)
   starterCode    String              @default("")
   order          Int                 @default(0)
   createdAt      DateTime            @default(now())
@@ -511,6 +505,7 @@ model Submission {
   exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
 
   @@index([userId, exerciseId])
+  @@index([userId, status, createdAt])
 }
 
 // ---------------------------------------------------------------------------
@@ -567,6 +562,7 @@ model QuizAttempt {
   quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
 
   @@index([userId, quizId])
+  @@index([userId, createdAt])
 }
 
 // ---------------------------------------------------------------------------
@@ -587,6 +583,7 @@ model Progress {
 
   @@unique([userId, itemType, itemId])
   @@index([userId, courseId])
+  @@index([userId, completed, completedAt])
 }
 
 // Ghi chú & đánh dấu bài học của người dùng (#8).

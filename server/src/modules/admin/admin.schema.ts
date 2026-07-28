@@ -1,6 +1,12 @@
 import { z } from 'zod';
 
-const language = z.enum(['SQL', 'C', 'CPP', 'PYTHON']);
+const language = z
+  .string()
+  .trim()
+  .min(1)
+  .max(80)
+  .regex(/^[a-zA-Z0-9+#._-]+$/, 'Mã ngôn ngữ chỉ gồm chữ, số và các ký tự + # . _ -')
+  .transform((value) => value.toUpperCase());
 
 export const courseSchema = z.object({
   slug: z.string().min(1).max(60),

@@ -22,6 +22,7 @@
     "demo:up": "powershell -ExecutionPolicy Bypass -File scripts/demo.ps1 up",
     "demo:status": "powershell -ExecutionPolicy Bypass -File scripts/demo.ps1 status",
     "demo:smoke": "node scripts/demo-smoke.mjs",
+    "load:judge0": "node scripts/judge0-load-smoke.mjs",
     "test:e2e": "playwright test",
     "lint": "npm run lint --workspaces --if-present",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",

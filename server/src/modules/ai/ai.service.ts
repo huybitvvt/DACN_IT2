@@ -20,9 +20,7 @@ function buildSystemPrompt(context: string): string {
     'Kiểm tra chính xác từng ký tự; không mặc định code đúng hoặc sai.',
     'Trả lời tiếng Việt, tối đa 80 từ, rõ ràng cho người mới.',
     'Nếu có ngữ cảnh, chỉ dùng thông tin phù hợp và không bịa thêm.',
-    context
-      ? `\nTài liệu khóa học:\n${context}`
-      : '',
+    context ? `\nTài liệu khóa học:\n${context}` : '',
   ].join('\n');
 }
 
@@ -99,7 +97,7 @@ export function getQuickChatReply(message: string): string | null {
 }
 
 export interface ExerciseErrorParams {
-  language: 'SQL' | 'C' | 'CPP' | 'PYTHON';
+  language: string;
   title: string;
   sourceCode: string;
   compileError?: string;
@@ -154,14 +152,19 @@ export function getQuickExerciseDiagnostic(params: ExerciseErrorParams): string 
 
   if (params.language === 'PYTHON' && /^\s*print\s*['"]/m.test(source)) {
     const expected = params.failedTests?.[0]?.expectedOutput;
-    const correctedCall = expected ? `print(${JSON.stringify(expected)})` : 'print("Nội dung cần in")';
+    const correctedCall = expected
+      ? `print(${JSON.stringify(expected)})`
+      : 'print("Nội dung cần in")';
     return [
       'Nguyên nhân: Trong Python 3, `print` là một hàm nhưng bạn đặt dấu nháy ngay sau tên hàm, nên câu lệnh sai cú pháp.',
       `Cách sửa: gọi hàm bằng cặp ngoặc, ví dụ \`${correctedCall}\`.`,
     ].join('\n\n');
   }
 
-  if (params.language === 'PYTHON' && /NameError:\s*name ['"]([^'"]+)['"] is not defined/i.test(error)) {
+  if (
+    params.language === 'PYTHON' &&
+    /NameError:\s*name ['"]([^'"]+)['"] is not defined/i.test(error)
+  ) {
     const variable = error.match(/NameError:\s*name ['"]([^'"]+)['"] is not defined/i)?.[1];
     return [
       `Nguyên nhân: Tên \`${variable ?? 'biến/hàm'}\` chưa được khai báo hoặc bị viết sai.`,
@@ -266,7 +269,10 @@ async function prepareMessages(
     { role: 'user', content: message },
   ];
 
-  return { messages, sources: retrieved.map((l) => ({ title: l.title, courseTitle: l.courseTitle })) };
+  return {
+    messages,
+    sources: retrieved.map((l) => ({ title: l.title, courseTitle: l.courseTitle })),
+  };
 }
 
 // Phiên bản streaming: yield từng token. Nếu ngoài phạm vi, yield câu từ chối.

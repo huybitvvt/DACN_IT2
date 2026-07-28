@@ -13,9 +13,11 @@ const statusText: Record<ContestSummary['status'], string> = {
 };
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(
-    new Date(value),
-  );
+  return new Intl.DateTimeFormat('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(new Date(value));
 }
 
 export default function ContestsPage() {
@@ -44,8 +46,9 @@ export default function ContestsPage() {
             Mùa thi, ranking và ưu đãi học phí
           </h1>
           <p className="mt-2 max-w-2xl text-gray-600 dark:text-gray-400">
-            Học viên tích điểm bằng bài học, bài tập, quiz và streak. Top bảng xếp hạng nhận hoàn học phí,
-            voucher hoặc huy hiệu đặc biệt.
+            Điểm theo mùa được chuẩn hóa trên thang 1.000 từ bài học, bài code, quiz, phòng thi và
+            số ngày học thực tế. Top bảng xếp hạng nhận hoàn học phí, voucher hoặc huy hiệu đặc
+            biệt.
           </p>
         </div>
         <Link
@@ -72,7 +75,9 @@ export default function ContestsPage() {
                     <Trophy className="h-5 w-5" />
                   </span>
                   <div className="min-w-0">
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">{contest.title}</h2>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                      {contest.title}
+                    </h2>
                     <p className="mt-1 line-clamp-2 text-sm text-gray-600 dark:text-gray-400">
                       {contest.description}
                     </p>
@@ -105,12 +110,19 @@ export default function ContestsPage() {
               {contest.topUsers.length > 0 && (
                 <ol className="mt-4 space-y-2">
                   {contest.topUsers.map((u) => (
-                    <li key={u.rank} className="flex items-center gap-3 rounded-lg bg-gray-50 px-3 py-2 dark:bg-white/5">
-                      <span className="w-8 text-sm font-bold text-brand-600 dark:text-brand-300">#{u.rank}</span>
+                    <li
+                      key={u.rank}
+                      className="flex items-center gap-3 rounded-lg bg-gray-50 px-3 py-2 dark:bg-white/5"
+                    >
+                      <span className="w-8 text-sm font-bold text-brand-600 dark:text-brand-300">
+                        #{u.rank}
+                      </span>
                       <span className="min-w-0 flex-1 truncate text-sm font-medium text-gray-900 dark:text-gray-100">
                         {u.displayName}
                       </span>
-                      <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{u.score} đ</span>
+                      <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                        {u.score}/1000
+                      </span>
                     </li>
                   ))}
                 </ol>

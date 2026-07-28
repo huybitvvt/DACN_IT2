@@ -17,16 +17,39 @@ if (-not (Test-Path $envFile) -and (Test-Path $envExample)) {
 function Invoke-Compose {
   param([string[]]$ComposeArgs)
   docker compose --env-file $envFile -f $composeFile @ComposeArgs
+  if ($LASTEXITCODE -ne 0) {
+    throw "docker compose failed with exit code $LASTEXITCODE."
+  }
+}
+
+function Get-Judge0WorkerCount {
+  $line = Get-Content -LiteralPath $envFile |
+    Where-Object { $_ -match '^\s*JUDGE0_WORKERS\s*=' } |
+    Select-Object -Last 1
+  if (-not $line) {
+    return 2
+  }
+
+  $rawValue = ($line -split '=', 2)[1].Trim()
+  $parsed = 0
+  if (-not [int]::TryParse($rawValue, [ref]$parsed) -or $parsed -lt 1 -or $parsed -gt 16) {
+    throw "JUDGE0_WORKERS must be an integer from 1 to 16."
+  }
+  return $parsed
 }
 
 switch ($Action) {
   "up" {
-    Invoke-Compose @("up", "-d", "judge0-server", "judge0-worker", "judge0-db", "judge0-redis")
+    $workers = Get-Judge0WorkerCount
+    Invoke-Compose @("up", "-d", "--scale", "judge0-worker=$workers", "judge0-server", "judge0-worker", "judge0-db", "judge0-redis")
     Write-Host "Judge0 local: http://localhost:2358"
+    Write-Host "Judge0 workers: $workers"
   }
   "up-llama" {
-    Invoke-Compose @("--profile", "llama", "up", "-d")
+    $workers = Get-Judge0WorkerCount
+    Invoke-Compose @("--profile", "llama", "up", "-d", "--scale", "judge0-worker=$workers")
     Write-Host "Judge0 local: http://localhost:2358"
+    Write-Host "Judge0 workers: $workers"
     Write-Host "Llama local:  http://localhost:8080/v1"
     Write-Host "Put a GGUF model at docker/local-services/models and set LLAMA_MODEL_FILE in docker/local-services/.env."
   }

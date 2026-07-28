@@ -1,4 +1,9 @@
 import rateLimit from 'express-rate-limit';
+import type { Request } from 'express';
+
+function learnerAwareKey(req: Request) {
+  return req.user?.sub ? `user:${req.user.sub}` : `ip:${req.ip}`;
+}
 
 // Giới hạn chung cho toàn bộ API: tránh lạm dụng cơ bản.
 export const generalLimiter = rateLimit({
@@ -6,6 +11,7 @@ export const generalLimiter = rateLimit({
   max: 1000,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: learnerAwareKey,
   message: {
     error: { code: 'TOO_MANY_REQUESTS', message: 'Quá nhiều yêu cầu, vui lòng thử lại sau.' },
   },
@@ -17,6 +23,7 @@ export const heavyLimiter = rateLimit({
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: learnerAwareKey,
   message: {
     error: {
       code: 'TOO_MANY_REQUESTS',
@@ -31,6 +38,7 @@ export const authLimiter = rateLimit({
   max: 50,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: learnerAwareKey,
   message: {
     error: {
       code: 'TOO_MANY_REQUESTS',

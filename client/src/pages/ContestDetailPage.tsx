@@ -1,6 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, BookOpenCheck, CheckCircle2, Clock, Flame, Gift, Medal, Play, Send, Trophy } from 'lucide-react';
+import {
+  ArrowLeft,
+  BookOpenCheck,
+  CalendarCheck2,
+  CheckCircle2,
+  Clock,
+  Gift,
+  Medal,
+  Play,
+  Send,
+  Trophy,
+} from 'lucide-react';
 import Alert from '@/components/ui/Alert';
 import Spinner from '@/components/ui/Spinner';
 import { getErrorMessage } from '@/lib/api';
@@ -17,9 +28,11 @@ import {
 } from '@/lib/contestApi';
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(
-    new Date(value),
-  );
+  return new Intl.DateTimeFormat('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(new Date(value));
 }
 
 export default function ContestDetailPage() {
@@ -74,7 +87,10 @@ export default function ContestDetailPage() {
     try {
       const nextRoom = await submitContestRoom(slug);
       setRoom(nextRoom);
-      const [contestData, myRewardData] = await Promise.all([fetchContest(slug), fetchMyContestReward(slug)]);
+      const [contestData, myRewardData] = await Promise.all([
+        fetchContest(slug),
+        fetchMyContestReward(slug),
+      ]);
       setContest(contestData);
       setMyReward(myRewardData);
     } catch (err) {
@@ -104,7 +120,9 @@ export default function ContestDetailPage() {
             <p className="text-sm font-semibold uppercase tracking-wide text-brand-600 dark:text-brand-300">
               {formatDate(contest.startsAt)} - {formatDate(contest.endsAt)}
             </p>
-            <h1 className="mt-1 text-3xl font-extrabold text-gray-900 dark:text-gray-100">{contest.title}</h1>
+            <h1 className="mt-1 text-3xl font-extrabold text-gray-900 dark:text-gray-100">
+              {contest.title}
+            </h1>
             <p className="mt-2 max-w-3xl text-gray-600 dark:text-gray-400">{contest.description}</p>
           </div>
           <span className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 dark:bg-amber-400/10 dark:text-amber-300">
@@ -115,12 +133,20 @@ export default function ContestDetailPage() {
         <p className="mt-4 rounded-lg bg-gray-50 p-3 text-sm text-gray-600 dark:bg-white/5 dark:text-gray-300">
           {contest.scoringNote}
         </p>
+        <div className="mt-3 grid gap-2 text-xs sm:grid-cols-5">
+          <ScoreRule label="Bài học" value="Tối đa 200" />
+          <ScoreRule label="Bài code" value="Tối đa 250" />
+          <ScoreRule label="Quiz" value="Tối đa 150" />
+          <ScoreRule label="Phòng thi" value="Tối đa 300" />
+          <ScoreRule label="Độ đều" value="Tối đa 100" />
+        </div>
         {myReward && (
           <div className="mt-4 rounded-lg border border-brand-200 bg-brand-50 p-4 dark:border-brand-800 dark:bg-brand-900/20">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
                 <p className="text-sm font-semibold text-brand-700 dark:text-brand-300">
-                  Vị trí của bạn: {myReward.rank ? `#${myReward.rank}` : 'chưa có điểm'} · {myReward.score} điểm
+                  Vị trí của bạn: {myReward.rank ? `#${myReward.rank}` : 'chưa có điểm'} ·{' '}
+                  {myReward.score}/1000 điểm
                 </p>
                 <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
                   {myReward.reward
@@ -139,8 +165,7 @@ export default function ContestDetailPage() {
                   </p>
                 )}
               </div>
-              {myReward.reward &&
-                (!myReward.claim || myReward.claim.status === 'REJECTED') && (
+              {myReward.reward && (!myReward.claim || myReward.claim.status === 'REJECTED') && (
                 <button
                   type="button"
                   onClick={() => void handleClaim()}
@@ -169,14 +194,16 @@ export default function ContestDetailPage() {
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
                   <p className="font-semibold text-gray-900 dark:text-gray-100">
-                    Thời lượng: {room.contest.durationMinutes} phút · {room.contest.problems.length} câu
+                    Thời lượng: {room.contest.durationMinutes} phút · {room.contest.problems.length}{' '}
+                    câu
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     Làm bài qua các liên kết bên dưới, sau đó quay lại nộp phòng thi để chốt điểm.
                   </p>
                   {room.attempt && (
                     <p className="mt-1 text-sm font-medium text-brand-700 dark:text-brand-300">
-                      Trạng thái: {room.attempt.status} · {room.attempt.score}/{room.attempt.maxScore} điểm
+                      Trạng thái: {room.attempt.status} · {room.attempt.score}/
+                      {room.attempt.maxScore} điểm
                     </p>
                   )}
                 </div>
@@ -212,12 +239,20 @@ export default function ContestDetailPage() {
                         ? `/lessons/${problem.lessonId}/quiz`
                         : '#';
                   return (
-                    <li key={problem.id} className="flex flex-col gap-2 rounded-lg bg-gray-50 p-3 dark:bg-white/5 md:flex-row md:items-center">
-                      <span className="font-bold text-brand-600 dark:text-brand-300">Câu {index + 1}</span>
+                    <li
+                      key={problem.id}
+                      className="flex flex-col gap-2 rounded-lg bg-gray-50 p-3 dark:bg-white/5 md:flex-row md:items-center"
+                    >
+                      <span className="font-bold text-brand-600 dark:text-brand-300">
+                        Câu {index + 1}
+                      </span>
                       <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-gray-900 dark:text-gray-100">{problem.title}</p>
+                        <p className="font-semibold text-gray-900 dark:text-gray-100">
+                          {problem.title}
+                        </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {problem.problemType === 'EXERCISE' ? 'Bài code' : 'Quiz'} · {problem.points} điểm
+                          {problem.problemType === 'EXERCISE' ? 'Bài code' : 'Quiz'} ·{' '}
+                          {problem.points} điểm
                         </p>
                       </div>
                       <Link
@@ -247,7 +282,10 @@ export default function ContestDetailPage() {
               className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-ink-800"
             >
               <p className="text-sm font-semibold text-brand-600 dark:text-brand-300">
-                Hạng {reward.rankFrom === reward.rankTo ? reward.rankFrom : `${reward.rankFrom}-${reward.rankTo}`}
+                Hạng{' '}
+                {reward.rankFrom === reward.rankTo
+                  ? reward.rankFrom
+                  : `${reward.rankFrom}-${reward.rankTo}`}
               </p>
               <h3 className="mt-1 font-bold text-gray-900 dark:text-gray-100">{reward.title}</h3>
               <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{reward.description}</p>
@@ -276,20 +314,29 @@ export default function ContestDetailPage() {
                     {row.rank}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-bold text-gray-900 dark:text-gray-100">{row.displayName}</p>
+                    <p className="truncate font-bold text-gray-900 dark:text-gray-100">
+                      {row.displayName}
+                    </p>
                     <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
                       <span className="inline-flex items-center gap-1">
                         <BookOpenCheck className="h-3.5 w-3.5" />
-                        {row.completedItems} mục học
+                        {row.completedItems} bài học
                       </span>
                       <span className="inline-flex items-center gap-1">
                         <CheckCircle2 className="h-3.5 w-3.5" />
                         {row.passedSubmissions} bài pass
                       </span>
                       <span className="inline-flex items-center gap-1">
-                        <Flame className="h-3.5 w-3.5" />
-                        {row.streak} ngày
+                        <CalendarCheck2 className="h-3.5 w-3.5" />
+                        {row.activeDays}/{row.targetActiveDays} ngày
                       </span>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] font-semibold">
+                      <PointChip label="Học" value={row.learningPoints} />
+                      <PointChip label="Code" value={row.practicePoints} />
+                      <PointChip label="Quiz" value={row.quizPoints} />
+                      <PointChip label="Thi" value={row.examScore} />
+                      <PointChip label="Đều" value={row.consistencyPoints} />
                     </div>
                   </div>
                   {row.reward && (
@@ -297,7 +344,10 @@ export default function ContestDetailPage() {
                       {row.reward.title}
                     </span>
                   )}
-                  <span className="text-xl font-extrabold text-brand-600 dark:text-brand-300">{row.score} đ</span>
+                  <span className="text-xl font-extrabold text-brand-600 dark:text-brand-300">
+                    {row.score}
+                    <span className="text-xs font-semibold text-gray-500">/1000</span>
+                  </span>
                 </div>
               </li>
             ))}
@@ -305,5 +355,22 @@ export default function ContestDetailPage() {
         )}
       </section>
     </div>
+  );
+}
+
+function ScoreRule({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-gray-700 dark:bg-slate-900">
+      <p className="font-bold text-gray-900 dark:text-gray-100">{label}</p>
+      <p className="text-gray-500 dark:text-gray-400">{value}</p>
+    </div>
+  );
+}
+
+function PointChip({ label, value }: { label: string; value: number }) {
+  return (
+    <span className="rounded-full bg-gray-100 px-2 py-1 text-gray-600 dark:bg-slate-900 dark:text-gray-300">
+      {label} {value}
+    </span>
   );
 }

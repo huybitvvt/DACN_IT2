@@ -6,7 +6,9 @@ import {
   AlertTriangle,
   ArrowRight,
   Award,
+  BarChart3,
   BookOpenCheck,
+  CalendarCheck2,
   CheckCircle2,
   Clock3,
   Flame,
@@ -14,13 +16,13 @@ import {
   Gift,
   GraduationCap,
   ListChecks,
-  Medal,
   ShieldCheck,
   Trophy,
 } from 'lucide-react';
 import Alert from '@/components/ui/Alert';
 import Spinner from '@/components/ui/Spinner';
 import ProgressBar from '@/components/ProgressBar';
+import RetentionTrendChart from '@/components/RetentionTrendChart';
 import { getErrorMessage } from '@/lib/api';
 import {
   fetchRetentionPlan,
@@ -30,10 +32,14 @@ import {
 } from '@/lib/retentionApi';
 
 const riskTone: Record<RiskLevel, string> = {
-  NOT_STARTED: 'border-sky-200 bg-sky-50 text-sky-900 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-100',
-  ON_TRACK: 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200',
-  WATCH: 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200',
-  AT_RISK: 'border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-200',
+  NOT_STARTED:
+    'border-sky-200 bg-sky-50 text-sky-900 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-100',
+  ON_TRACK:
+    'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200',
+  WATCH:
+    'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200',
+  AT_RISK:
+    'border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-200',
 };
 
 const missionIcon: Record<MissionType, ElementType> = {
@@ -79,7 +85,9 @@ export default function RetentionPage() {
   if (!plan) return null;
 
   const RiskIcon = riskIcon(plan.riskLevel);
-  const rescuePercent = Math.round((Math.min(plan.rescueOffer.current, plan.rescueOffer.target) / plan.rescueOffer.target) * 100);
+  const rescuePercent = Math.round(
+    (Math.min(plan.rescueOffer.current, plan.rescueOffer.target) / plan.rescueOffer.target) * 100,
+  );
 
   return (
     <div className="space-y-6">
@@ -120,8 +128,16 @@ export default function RetentionPage() {
           <div className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[34rem]">
             <Metric icon={Activity} label="Tiến độ" value={`${plan.metrics.overallPercent}%`} />
             <Metric icon={Flame} label="Streak" value={`${plan.metrics.streak} ngày`} />
-            <Metric icon={Clock3} label="Lần học gần nhất" value={inactiveText(plan.metrics.daysInactive)} />
-            <Metric icon={Medal} label="Huy hiệu" value={`${plan.metrics.badges}`} />
+            <Metric
+              icon={CalendarCheck2}
+              label="Độ đều"
+              value={`${plan.metrics.activeDays14}/14 ngày`}
+            />
+            <Metric
+              icon={BarChart3}
+              label="Quiz TB"
+              value={`${plan.metrics.averageQuizPercent14}%`}
+            />
           </div>
         </div>
         {plan.scoreFormula.factors.length > 0 && (
@@ -136,6 +152,12 @@ export default function RetentionPage() {
                   <p className="mt-1 text-lg font-black">
                     {factor.score}/{factor.maxScore}
                   </p>
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
+                    <div
+                      className="h-full rounded-full bg-current"
+                      style={{ width: `${Math.round((factor.score / factor.maxScore) * 100)}%` }}
+                    />
+                  </div>
                   <p className="mt-1 text-xs leading-5 opacity-80">{factor.explanation}</p>
                 </div>
               ))}
@@ -150,13 +172,50 @@ export default function RetentionPage() {
         )}
       </section>
 
+      <RetentionTrendChart
+        points={plan.scoreTrend.points}
+        delta7d={plan.scoreTrend.summary.delta7d}
+        direction={plan.scoreTrend.summary.direction}
+        averageScore={plan.scoreTrend.summary.averageScore}
+        bestScore={plan.scoreTrend.summary.bestScore}
+      />
+
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <MetricCard
+          icon={Clock3}
+          label="Lần học gần nhất"
+          value={inactiveText(plan.metrics.daysInactive)}
+          detail="Nghỉ từ 7 ngày sẽ không còn được xếp mức ổn định."
+        />
+        <MetricCard
+          icon={BookOpenCheck}
+          label="Tiến độ mới"
+          value={`${plan.metrics.completedItems14} mục`}
+          detail="Số bài học, bài tập và quiz hoàn thành trong 14 ngày."
+        />
+        <MetricCard
+          icon={CheckCircle2}
+          label="Bài code đã thử"
+          value={`${plan.metrics.attemptedExercises14} bài`}
+          detail="Mỗi bài chỉ tính một lần để tránh cày điểm."
+        />
+        <MetricCard
+          icon={Activity}
+          label="Nhịp tuần"
+          value={`${plan.metrics.activityUnits7}/${plan.metrics.activityUnitsPrevious7}`}
+          detail="Tuần này so với tuần trước."
+        />
+      </section>
+
       <section className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
         <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-ink-800">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Nhiệm vụ ưu tiên</h2>
+              <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                Nhiệm vụ ưu tiên
+              </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                Tính từ tiến độ, streak và mùa thi hiện tại.
+                Tính từ độ đều, tiến độ mới, chất lượng thực hành và xu hướng gần đây.
               </p>
             </div>
             <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-bold text-brand-700 dark:bg-brand-900/30 dark:text-brand-200">
@@ -179,11 +238,15 @@ export default function RetentionPage() {
                       <Icon className="h-5 w-5" />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-semibold text-gray-900 dark:text-gray-100">{mission.title}</h3>
-                      <p className="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-400">{mission.description}</p>
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                        {mission.title}
+                      </h3>
+                      <p className="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-400">
+                        {mission.description}
+                      </p>
                       <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold">
                         <span className="rounded-full bg-emerald-50 px-2 py-1 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200">
-                          +{mission.points} điểm
+                          {mission.pointsLabel}
                         </span>
                         <span className="rounded-full bg-amber-50 px-2 py-1 text-amber-700 dark:bg-amber-950 dark:text-amber-200">
                           {mission.minutes} phút
@@ -211,7 +274,9 @@ export default function RetentionPage() {
                 <Gift className="h-5 w-5" />
               </span>
               <div>
-                <h2 className="font-bold text-gray-900 dark:text-gray-100">{plan.rescueOffer.title}</h2>
+                <h2 className="font-bold text-gray-900 dark:text-gray-100">
+                  {plan.rescueOffer.title}
+                </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   {progressText(plan.rescueOffer.current, plan.rescueOffer.target)} nhiệm vụ
                 </p>
@@ -238,7 +303,13 @@ export default function RetentionPage() {
                     to={mission.ctaHref}
                     className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 p-3 text-sm transition-colors hover:border-brand-300 dark:border-gray-700 dark:hover:border-brand-700"
                   >
-                    <span className={mission.completedAt ? 'line-through opacity-60' : 'font-semibold text-gray-800 dark:text-gray-200'}>
+                    <span
+                      className={
+                        mission.completedAt
+                          ? 'line-through opacity-60'
+                          : 'font-semibold text-gray-800 dark:text-gray-200'
+                      }
+                    >
                       {mission.title}
                     </span>
                     <span className="flex-shrink-0 text-xs font-bold text-brand-600 dark:text-brand-300">
@@ -265,7 +336,9 @@ export default function RetentionPage() {
             </div>
             <div className="mt-4 space-y-3">
               {plan.incentives.length === 0 ? (
-                <p className="text-sm text-gray-500 dark:text-gray-400">Chưa có mùa thưởng đang mở.</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Chưa có mùa thưởng đang mở.
+                </p>
               ) : (
                 plan.incentives.map((item) => (
                   <Link
@@ -273,11 +346,20 @@ export default function RetentionPage() {
                     to={item.ctaHref}
                     className="block rounded-lg border border-gray-200 p-3 transition-colors hover:border-brand-300 dark:border-gray-700 dark:hover:border-brand-700"
                   >
-                    <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">{item.contestTitle}</p>
-                    <h3 className="mt-1 font-semibold text-gray-900 dark:text-gray-100">{item.title}</h3>
-                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{item.description}</p>
+                    <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                      {item.contestTitle}
+                    </p>
+                    <h3 className="mt-1 font-semibold text-gray-900 dark:text-gray-100">
+                      {item.title}
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                      {item.description}
+                    </p>
                     <p className="mt-2 text-xs font-bold text-brand-600 dark:text-brand-300">
-                      Hạng {item.rankFrom === item.rankTo ? item.rankFrom : `${item.rankFrom}-${item.rankTo}`}
+                      Hạng{' '}
+                      {item.rankFrom === item.rankTo
+                        ? item.rankFrom
+                        : `${item.rankFrom}-${item.rankTo}`}
                     </p>
                   </Link>
                 ))
@@ -296,7 +378,9 @@ export default function RetentionPage() {
               </span>
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Khoá cần tập trung</p>
-                <h2 className="font-bold text-gray-900 dark:text-gray-100">{plan.focusCourse.title}</h2>
+                <h2 className="font-bold text-gray-900 dark:text-gray-100">
+                  {plan.focusCourse.title}
+                </h2>
               </div>
             </div>
             <Link
@@ -316,15 +400,7 @@ export default function RetentionPage() {
   );
 }
 
-function Metric({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: ElementType;
-  label: string;
-  value: string;
-}) {
+function Metric({ icon: Icon, label, value }: { icon: ElementType; label: string; value: string }) {
   return (
     <div className="rounded-lg bg-white/75 p-3 shadow-sm dark:bg-slate-900/60">
       <div className="flex items-center gap-2 text-xs font-semibold opacity-80">
@@ -332,6 +408,29 @@ function Metric({
         {label}
       </div>
       <p className="mt-1 text-sm font-black">{value}</p>
+    </div>
+  );
+}
+
+function MetricCard({
+  icon: Icon,
+  label,
+  value,
+  detail,
+}: {
+  icon: ElementType;
+  label: string;
+  value: string;
+  detail: string;
+}) {
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-ink-800">
+      <div className="flex items-center gap-2 text-sm font-semibold text-gray-500 dark:text-gray-400">
+        <Icon className="h-4 w-4 text-brand-600 dark:text-brand-300" />
+        {label}
+      </div>
+      <p className="mt-2 text-xl font-black text-gray-900 dark:text-gray-100">{value}</p>
+      <p className="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">{detail}</p>
     </div>
   );
 }

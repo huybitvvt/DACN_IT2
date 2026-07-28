@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
 import { env } from './config/env.js';
 import { generalLimiter } from './middleware/rateLimit.js';
+import { optionalAuth } from './middleware/auth.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import apiRouter from './routes/index.js';
 
@@ -33,7 +34,11 @@ export function createApp() {
   app.use(express.urlencoded({ extended: true }));
   app.use(cookieParser());
 
-  // Rate limit chung cho mọi route /api
+  // Gắn user trước rate limit để nhiều học viên chung NAT trường học không dùng
+  // chung một quota IP.
+  app.use(optionalAuth);
+
+  // Rate limit chung cho mọi route /api.
   app.use('/api', generalLimiter);
 
   // Logger gọn nhẹ cho môi trường dev.

@@ -4,26 +4,47 @@
 
 CodeLearn không tuyên bố từng tính năng riêng lẻ là chưa từng xuất hiện. Điểm khác biệt có thể bảo vệ bằng code và dữ liệu là một vòng kín:
 
-1. Thu thập tiến độ, submission, quiz, streak, huy hiệu và hoạt động thi.
+1. Thu thập tiến độ, submission, quiz và hoạt động thi theo mốc thời gian.
 2. Chấm điểm rủi ro bằng công thức giải thích được.
 3. Giao gói cứu nhịp gồm tối đa ba nhiệm vụ trong 48 giờ.
 4. Nhắc người học trong ứng dụng và qua email nếu đã cấu hình.
 5. Đồng bộ trạng thái nhiệm vụ từ dữ liệu học thật.
 6. Lưu tỷ lệ hoàn thành và chênh lệch điểm sau can thiệp.
 
-## 2. Công thức rủi ro
+## 2. Công thức điểm giữ nhịp
 
-Phiên bản `RULE_V2_2026_07` có tổng 100 điểm:
+Phiên bản `RETENTION_V3_2026_07` có tổng 100 điểm và ưu tiên hành vi gần đây. Streak, huy hiệu hoặc tiến độ tích lũy cũ không còn đủ sức che lấp việc người học đã ngừng học.
 
-| Thành phần | Điểm tối đa |
-|---|---:|
-| Mức độ hoạt động gần đây | 35 |
-| Tiến độ các khóa đã mua | 30 |
-| Chuỗi học liên tục | 15 |
-| Submission pass và quiz trong 7 ngày | 15 |
-| Huy hiệu | 5 |
+| Thành phần | Điểm tối đa | Cách tính chính |
+|---|---:|---|
+| Hoạt động gần nhất | 25 | Giảm theo số ngày không học: 25 điểm nếu học hôm nay và về 0 sau hơn 14 ngày |
+| Độ đều 14 ngày | 20 | `min(số ngày học / 6 x 20, 20)` |
+| Tiến độ | 20 | Tối đa 8 điểm nền theo tiến độ tổng và 12 điểm theo nội dung mới hoàn thành trong 14 ngày |
+| Chất lượng thực hành | 25 | 15 điểm theo tỷ lệ bài code duy nhất đã pass và 10 điểm theo trung bình kết quả tốt nhất của từng quiz |
+| Xu hướng tuần | 10 | 6 điểm theo khối lượng tuần này và 4 điểm khi duy trì hoặc tăng so với tuần trước |
 
-API trả cả điểm thành phần và lời giải thích. Hệ thống chỉ đánh giá nguy cơ với người đã mua khóa, tránh gắn nhãn sai cho tài khoản chưa bắt đầu.
+Hai luật chặn xử lý trường hợp công thức cộng vẫn cho điểm quá cao:
+
+- Không học từ 14 ngày trở lên luôn là `AT_RISK`.
+- Không học từ 7 ngày trở lên không thể là `ON_TRACK`.
+
+Ngưỡng còn lại là `ON_TRACK` từ 70 điểm, `WATCH` từ 45 điểm và `AT_RISK` dưới 45 điểm. API trả phiên bản công thức, điểm từng thành phần và lý do nên kết quả có thể giải thích được.
+
+Hệ thống dựng lại 28 mốc điểm theo ngày từ lịch sử học thật. Biểu đồ tại `/retention` hiển thị đường điểm, vùng rủi ro, chênh lệch 7 ngày, điểm trung bình và điểm tốt nhất. Hệ thống chỉ đánh giá nguy cơ với người đã thanh toán khóa học.
+
+## 2.1. Công thức thi đua
+
+Phiên bản `COMPETITION_V2_1000` chuẩn hóa điểm mùa thi về tối đa 1.000:
+
+| Thành phần | Điểm tối đa | Quy tắc chống cày điểm |
+|---|---:|---|
+| Học bài | 200 | 20 điểm cho mỗi lesson duy nhất |
+| Thực hành code | 250 | 35 điểm cho mỗi exercise duy nhất đã pass |
+| Quiz | 150 | Tối đa 30 điểm/quiz theo kết quả tốt nhất |
+| Phòng thi | 300 | Chuẩn hóa theo `điểm đạt được / tổng điểm đề` |
+| Học đều | 100 | Theo số ngày có hoạt động; mục tiêu 3 ngày/tuần, tối đa 12 ngày |
+
+Chỉ hoạt động trong thời gian mùa thi và của học viên đã thanh toán mới được tính. Hệ thống không cộng lặp một exercise hoặc quiz, không dùng huy hiệu cũ và không dùng streak ngoài mùa. Khi bằng điểm, thứ tự ưu tiên lần lượt là phòng thi, thực hành, quiz, độ đều và thời điểm đạt điểm sớm hơn.
 
 ## 3. Vòng can thiệp
 
@@ -78,7 +99,7 @@ Luồng thật nhận SePay webhook qua `/api/payments/sepay/webhook`, xác th�
 
 Các giới hạn cần nói rõ khi bảo vệ:
 
-- Công thức rủi ro là heuristic, chưa phải mô hình dự đoán đã được kiểm định trên dữ liệu lớn.
+- Công thức rủi ro là heuristic có phiên bản, chưa phải mô hình dự đoán đã được kiểm định trên dữ liệu lớn.
 - Model Qwen 1.5B local phù hợp demo nhưng chất lượng suy luận thấp hơn model lớn.
 - Quick Tunnel có URL thay đổi; production cần domain/tunnel cố định và backend luôn hoạt động.
 - Email phụ thuộc cấu hình nhà cung cấp, nhưng kênh thông báo trong ứng dụng không phụ thuộc email.

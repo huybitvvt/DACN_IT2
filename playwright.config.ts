@@ -4,6 +4,9 @@ export default defineConfig({
   testDir: './e2e',
   outputDir: 'test-results',
   fullyParallel: false,
+  // Hai Edge instance cùng Argon2, Vite và Docker gây nhiễu trên máy demo.
+  // Có thể tăng bằng E2E_WORKERS trên CI/server có tài nguyên riêng.
+  workers: Number(process.env.E2E_WORKERS ?? '1'),
   retries: 0,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {

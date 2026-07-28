@@ -19,8 +19,12 @@ export interface ContestLeaderboardEntry {
   passedSubmissions: number;
   quizPoints: number;
   examScore: number;
-  streak: number;
-  badges: number;
+  activeDays: number;
+  targetActiveDays: number;
+  learningPoints: number;
+  practicePoints: number;
+  consistencyPoints: number;
+  formulaVersion: string;
   reward: ContestReward | null;
 }
 
@@ -109,7 +113,9 @@ export async function fetchMyContestReward(slug: string): Promise<MyContestRewar
 }
 
 export async function claimContestReward(slug: string): Promise<MyContestReward['claim']> {
-  const { data } = await api.post<{ claim: MyContestReward['claim'] }>(`/contests/${slug}/claim-reward`);
+  const { data } = await api.post<{ claim: MyContestReward['claim'] }>(
+    `/contests/${slug}/claim-reward`,
+  );
   return data.claim;
 }
 

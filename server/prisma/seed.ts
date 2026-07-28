@@ -136,26 +136,26 @@ async function seedContests() {
     update: {
       title: 'CodeLearn Sprint 1',
       description:
-        'Mùa thi đua 4 tuần dành cho học viên mới: hoàn thành bài học, pass bài tập, làm quiz và duy trì streak để leo bảng xếp hạng.',
+        'Mùa thi đua 4 tuần dành cho học viên mới: hoàn thành bài học, pass bài tập, làm quiz và học đều để leo bảng xếp hạng.',
       status: 'ACTIVE',
       courseSlug: null,
       startsAt,
       endsAt,
       durationMinutes: 45,
       scoringNote:
-        'Điểm = bài học/bài tập/quiz hoàn thành + submission pass + điểm quiz + điểm phòng thi + streak + huy hiệu. Bảng xếp hạng chốt khi mùa thi kết thúc.',
+        'Thang 1.000 điểm: bài học 200, bài code 250, quiz 150, phòng thi 300 và độ đều 100. Chỉ tính hoạt động trong mùa; mỗi bài dùng kết quả tốt nhất.',
     },
     create: {
       slug: 'codelearn-sprint-1',
       title: 'CodeLearn Sprint 1',
       description:
-        'Mùa thi đua 4 tuần dành cho học viên mới: hoàn thành bài học, pass bài tập, làm quiz và duy trì streak để leo bảng xếp hạng.',
+        'Mùa thi đua 4 tuần dành cho học viên mới: hoàn thành bài học, pass bài tập, làm quiz và học đều để leo bảng xếp hạng.',
       status: 'ACTIVE',
       startsAt,
       endsAt,
       durationMinutes: 45,
       scoringNote:
-        'Điểm = bài học/bài tập/quiz hoàn thành + submission pass + điểm quiz + điểm phòng thi + streak + huy hiệu. Bảng xếp hạng chốt khi mùa thi kết thúc.',
+        'Thang 1.000 điểm: bài học 200, bài code 250, quiz 150, phòng thi 300 và độ đều 100. Chỉ tính hoạt động trong mùa; mỗi bài dùng kết quả tốt nhất.',
     },
   });
 
@@ -167,7 +167,8 @@ async function seedContests() {
         rankFrom: 1,
         rankTo: 1,
         title: 'Hoàn 50% học phí',
-        description: 'Top 1 được hoàn 50% học phí khoá đang học hoặc quy đổi thành voucher khoá tiếp theo.',
+        description:
+          'Top 1 được hoàn 50% học phí khoá đang học hoặc quy đổi thành voucher khoá tiếp theo.',
         rewardType: 'TUITION_REFUND',
         percentOff: 50,
       },
@@ -363,7 +364,9 @@ async function main() {
   const syncContests = process.env.SEED_SYNC_CONTESTS === 'true';
   const existing = await prisma.course.count();
   if (existing > 0 && !force) {
-    console.log(`[seed] Đã có ${existing} khoá học -> bỏ qua seed (đặt SEED_FORCE=true để nạp lại).`);
+    console.log(
+      `[seed] Đã có ${existing} khoá học -> bỏ qua seed (đặt SEED_FORCE=true để nạp lại).`,
+    );
     if (syncContests) {
       await seedContests();
       console.log('[seed] Đã đồng bộ mùa thi mẫu theo SEED_SYNC_CONTESTS=true.');
